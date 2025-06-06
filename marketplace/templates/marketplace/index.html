@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piata.ro - Anunțuri gratuite în România</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+        }
+        .navbar {
+            box-shadow: 0 2px 4px rgba(0,0,0,.08);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            color: #0275d8;
+            font-size: 24px;
+        }
+        .search-container {
+            background-color: #e9ecef;
+            padding: 20px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .category-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: white;
+            font-size: 24px;
+        }
+        .category-item {
+            text-align: center;
+            margin-bottom: 30px;
+            transition: transform 0.2s;
+        }
+        .category-item:hover {
+            transform: translateY(-5px);
+        }
+        .category-name {
+            font-weight: 600;
+            color: #333;
+            margin-top: 10px;
+        }
+        .listing-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            background-color: white;
+        }
+        .listing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .listing-img {
+            height: 180px;
+            object-fit: cover;
+            width: 100%;
+        }
+        .listing-price {
+            font-weight: bold;
+            color: #0275d8;
+            font-size: 18px;
+        }
+        .listing-location {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .add-listing-btn {
+            background-color: #ff7700;
+            border-color: #ff7700;
+            font-weight: 600;
+        }
+        .add-listing-btn:hover {
+            background-color: #e66c00;
+            border-color: #e66c00;
+        }
+        .footer {
+            background-color: #343a40;
+            color: white;
+            padding: 3rem 0;
+            margin-top: 3rem;
+        }
+        .section-title {
+            position: relative;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            text-align: center;
+            font-weight: 700;
+        }
+        .section-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background-color: #0275d8;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+        <div class="container">
+            <a class="navbar-brand" href="/">Piata.ro</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">Acasă</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/api/listings/">Anunțuri</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/admin/">Admin</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <a href="/admin/marketplace/listing/add/" class="btn add-listing-btn text-white">
+                        <i class="fas fa-plus-circle me-2"></i>Adaugă anunț
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="search-container">
+        <div class="container">
+            <form action="/api/listings/" method="get">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <input type="text" name="search" class="form-control" placeholder="Caută anunțuri...">
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select" name="category">
+                            <option value="">Toate categoriile</option>
+                            {% for category in categories %}
+                            <option value="{{ category.id }}">{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search me-2"></i>Caută
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <section class="container mt-5">
+        <h2 class="section-title">Categorii populare</h2>
+        <div class="row">
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #28a745;">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="category-name">Imobiliare</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #007bff;">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <div class="category-name">Auto moto</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #fd7e14;">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="category-name">Locuri de muncă</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #e83e8c;">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <div class="category-name">Matrimoniale</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #dc3545;">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="category-name">Servicii</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #6f42c1;">
+                        <i class="fas fa-laptop"></i>
+                    </div>
+                    <div class="category-name">Electronice</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #6610f2;">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <div class="category-name">Modă și accesorii</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #fd7e14;">
+                        <i class="fas fa-paw"></i>
+                    </div>
+                    <div class="category-name">Animale</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #20c997;">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <div class="category-name">Casă și grădină</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #17a2b8;">
+                        <i class="fas fa-futbol"></i>
+                    </div>
+                    <div class="category-name">Timp liber și sport</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #ffc107;">
+                        <i class="fas fa-baby"></i>
+                    </div>
+                    <div class="category-name">Mamă și copil</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-lg-2">
+                <div class="category-item">
+                    <div class="category-icon" style="background-color: #20c997;">
+                        <i class="fas fa-suitcase-rolling"></i>
+                    </div>
+                    <div class="category-name">Cazare turism</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="container mt-5">
+        <h2 class="section-title">Anunțuri promovate</h2>
+        <div class="row">
+            {% for listing in featured_listings %}
+            <div class="col-md-3 mb-4">
+                <div class="listing-card">
+                    {% if listing.image %}
+                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="listing-img">
+                    {% else %}
+                    <div class="listing-img bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-image text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title text-truncate">{{ listing.title }}</h5>
+                        <p class="listing-price">{{ listing.price }} lei</p>
+                        <p class="listing-location"><i class="fas fa-map-marker-alt me-1"></i> {{ listing.location }}</p>
+                        <p class="card-text text-muted small">{{ listing.created_at|date:"d M Y" }}</p>
+                        <a href="/api/listings/{{ listing.id }}/" class="btn btn-sm btn-outline-primary w-100">Vezi detalii</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">Nu există anunțuri promovate momentan.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="container mt-5">
+        <h2 class="section-title">Anunțuri recente</h2>
+        <div class="row">
+            {% for listing in recent_listings %}
+            <div class="col-md-3 mb-4">
+                <div class="listing-card">
+                    {% if listing.image %}
+                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" class="listing-img">
+                    {% else %}
+                    <div class="listing-img bg-light d-flex align-items-center justify-content-center">
+                        <i class="fas fa-image text-secondary" style="font-size: 3rem;"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title text-truncate">{{ listing.title }}</h5>
+                        <p class="listing-price">{{ listing.price }} lei</p>
+                        <p class="listing-location"><i class="fas fa-map-marker-alt me-1"></i> {{ listing.location }}</p>
+                        <p class="card-text text-muted small">{{ listing.created_at|date:"d M Y" }}</p>
+                        <a href="/api/listings/{{ listing.id }}/" class="btn btn-sm btn-outline-primary w-100">Vezi detalii</a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <p class="text-muted">Nu există anunțuri momentan.</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center mt-4">
+            <a href="/api/listings/" class="btn btn-outline-primary">Vezi toate anunțurile</a>
+        </div>
+    </section>
+
+    <footer class="footer mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <h5>Despre Piata.ro</h5>
+                    <p>Piata.ro este platforma ideală pentru a cumpăra și vinde produse și servicii în România. Simplu, rapid și eficient.</p>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Categorii</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Imobiliare</a></li>
+                        <li><a href="#" class="text-white">Auto</a></li>
+                        <li><a href="#" class="text-white">Electronice</a></li>
+                        <li><a href="#" class="text-white">Servicii</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-2 mb-4">
+                    <h5>Informații</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="#" class="text-white">Termeni și condiții</a></li>
+                        <li><a href="#" class="text-white">Politica de confidențialitate</a></li>
+                        <li><a href="#" class="text-white">Cum funcționează</a></li>
+                        <li><a href="#" class="text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <h5>Contactează-ne</h5>
+                    <p><i class="fas fa-envelope me-2"></i> contact@piata.ro</p>
+                    <p><i class="fas fa-phone me-2"></i> +40 123 456 789</p>
+                    <div class="mt-3">
+                        <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="fab fa-instagram"></i></a>
+                    </div>
+                </div>
+            </div>
+            <hr class="bg-light">
+            <div class="text-center">
+                <p>&copy; 2023 Piata.ro. Toate drepturile rezervate.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
