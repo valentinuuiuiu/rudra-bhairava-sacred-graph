@@ -23,4 +23,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('mcp/process/', process_mcp_query, name='mcp_processor'),
+    path('test_endpoint/', test_endpoint, name='test_endpoint'),
 ]
