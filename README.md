@@ -1,5 +1,8 @@
 # 🛒 Piața RO - Romanian Marketplace Platform
 
+**Motto**: Aknolwedging The Limitations of The AI is aknolwedging THe Limitations of Our OLD Ptaherns Stupid Mind,Dare to Dream and The Ai will make it Real
+
+
 **Piața RO** is a modern, full-featured Romanian marketplace platform inspired by popular sites like **Publi24.ro** and **OLX.ro**. Built with cutting-edge technologies, it provides a seamless experience for buying and selling items across Romania.
 
 ## 🌟 Key Features
