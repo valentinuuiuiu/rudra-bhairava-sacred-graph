@@ -1,16 +1,12 @@
 {
   "name": "piata-ro",
   "version": "1.0.0",
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run frontend\"",
-    "server": "node server.js",
-    "frontend": "cd frontend && reflex run",
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "concurrently": "^8.2.2",
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "pg": "^8.16.0"
+    "start": "python manage.py runserver 0.0.0.0:8000",
+    "migrate": "python manage.py migrate",
+    "makemigrations": "python manage.py makemigrations",
+    "createsuperuser": "python manage.py createsuperuser",
+    "collectstatic": "python manage.py collectstatic --noinput"
   }
 }

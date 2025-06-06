@@ -20,9 +20,13 @@
 
 ### 🔧 Development Tools & Assistants
 
-**sourcey.ai**
+**Sourcery AI**
 - Role: Code generation and analysis
 - Contribution: Advanced code suggestions and optimization
+
+**OpenHands Agent**
+- Role: AI assistant and co-developer
+- Contribution: Automated development workflows, debugging, and code enhancements
 
 **OpenHands**
 - Role: Development automation and debugging
