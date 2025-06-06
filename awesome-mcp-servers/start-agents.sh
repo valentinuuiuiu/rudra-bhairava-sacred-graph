@@ -39,7 +39,7 @@ start_sql_agent() {
 
 start_stock_agent() {
     echo "🚀 Starting Stock Agent..."
-    python stock_agent.py
+    ./start-stock-agent.sh
 }
 
 start_test_agent() {

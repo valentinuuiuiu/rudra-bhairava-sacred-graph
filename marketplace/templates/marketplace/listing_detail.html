@@ -1,0 +1,253 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}{{ listing.title }} - Piata.ro{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex mb-8" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'marketplace:home' %}" class="text-gray-700 hover:text-primary">
+                    <i class="fas fa-home mr-2"></i>Acasă
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <a href="{% url 'marketplace:category_detail' listing.category.slug %}" class="text-gray-700 hover:text-primary">{{ listing.category.name }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <span class="text-gray-500">{{ listing.title|truncatewords:3 }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2">
+            <!-- Images -->
+            <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+                <div class="h-96 bg-gray-200 relative">
+                    {% if listing.image %}
+                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" 
+                         class="w-full h-full object-cover">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">
+                        <i class="fas fa-image text-6xl"></i>
+                        <span class="ml-4 text-xl">Nu există imagine</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Listing Details -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">{{ listing.title }}</h1>
+                        <div class="flex items-center space-x-4 text-sm text-gray-500">
+                            <div class="flex items-center">
+                                <i class="fas fa-tag mr-1"></i>
+                                <span>{{ listing.category.name }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-map-marker-alt mr-1"></i>
+                                <span>{{ listing.location }}</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-clock mr-1"></i>
+                                <span>{{ listing.created_at|date:"d.m.Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-3xl font-bold text-primary mb-2">{{ listing.price }} RON</div>
+                        {% if listing.is_negotiable %}
+                        <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm">
+                            Negociabil
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="prose max-w-none">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Descriere</h3>
+                    <div class="text-gray-700 whitespace-pre-line">{{ listing.description }}</div>
+                </div>
+
+                <!-- Contact Actions -->
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <div class="flex flex-wrap gap-4">
+                        {% if user.is_authenticated %}
+                            <button class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                                <i class="fas fa-envelope mr-2"></i>Trimite mesaj
+                            </button>
+                            <button class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                                <i class="fas fa-phone mr-2"></i>Afișează telefon
+                            </button>
+                            <button class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                <i class="fas fa-heart mr-2"></i>Adaugă la favorite
+                            </button>
+                        {% else %}
+                            <a href="/admin/login/" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                                <i class="fas fa-sign-in-alt mr-2"></i>Conectează-te pentru a contacta
+                            </a>
+                        {% endif %}
+                        <button class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                            <i class="fas fa-share mr-2"></i>Partajează
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Safety Tips -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-yellow-800 mb-3">
+                    <i class="fas fa-shield-alt mr-2"></i>Sfaturi pentru siguranță
+                </h3>
+                <ul class="text-yellow-700 space-y-2 text-sm">
+                    <li><i class="fas fa-check-circle mr-2"></i>Întâlnește-te în locuri publice</li>
+                    <li><i class="fas fa-check-circle mr-2"></i>Verifică produsul înainte de plată</li>
+                    <li><i class="fas fa-check-circle mr-2"></i>Nu trimite bani în avans</li>
+                    <li><i class="fas fa-check-circle mr-2"></i>Folosește metode de plată sigure</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="lg:col-span-1">
+            <!-- Seller Info -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Vândător</h3>
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center mr-4">
+                        <i class="fas fa-user text-xl text-gray-600"></i>
+                    </div>
+                    <div>
+                        <div class="font-semibold text-gray-800">{{ listing.user.username }}</div>
+                        <div class="text-sm text-gray-500">Membru din {{ listing.user.date_joined|date:"M Y" }}</div>
+                    </div>
+                </div>
+                
+                {% if user.is_authenticated and user != listing.user %}
+                <div class="space-y-3">
+                    <button class="w-full bg-primary text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        <i class="fas fa-envelope mr-2"></i>Trimite mesaj
+                    </button>
+                    <button class="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                        <i class="fas fa-user mr-2"></i>Vezi profilul
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Detalii anunț</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">ID anunț:</span>
+                        <span class="font-semibold">#{{ listing.id }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Publicat:</span>
+                        <span class="font-semibold">{{ listing.created_at|date:"d.m.Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Actualizat:</span>
+                        <span class="font-semibold">{{ listing.updated_at|date:"d.m.Y" }}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Vizualizări:</span>
+                        <span class="font-semibold">{{ listing.views|default:0 }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Location Map -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-map-marker-alt mr-2"></i>Locație
+                </h3>
+                <div class="text-gray-700 mb-4">{{ listing.location }}</div>
+                <div class="h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                    <div class="text-center text-gray-500">
+                        <i class="fas fa-map text-3xl mb-2"></i>
+                        <div>Hartă locație</div>
+                        <div class="text-sm">(Va fi implementată)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Ad -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="text-center">
+                    <button class="text-red-600 hover:text-red-800 text-sm">
+                        <i class="fas fa-flag mr-2"></i>Raportează anunțul
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Similar Listings -->
+    {% if similar_listings %}
+    <div class="mt-16">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+            <i class="fas fa-list mr-2"></i>Anunțuri similare
+        </h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for similar in similar_listings %}
+            <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <a href="{% url 'marketplace:listing_detail' similar.id %}" class="block">
+                    <div class="h-32 bg-gray-200 relative">
+                        {% if similar.image %}
+                        <img src="{{ similar.image.url }}" alt="{{ similar.title }}" 
+                             class="w-full h-full object-cover">
+                        {% else %}
+                        <div class="w-full h-full flex items-center justify-center text-gray-400">
+                            <i class="fas fa-image text-2xl"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="absolute top-2 right-2 bg-black bg-opacity-75 text-white px-2 py-1 rounded text-xs">
+                            {{ similar.price }} RON
+                        </div>
+                    </div>
+                    
+                    <div class="p-3">
+                        <h4 class="font-semibold text-gray-800 text-sm mb-1 line-clamp-1">{{ similar.title }}</h4>
+                        <p class="text-gray-500 text-xs flex items-center">
+                            <i class="fas fa-map-marker-alt mr-1"></i>
+                            {{ similar.location }}
+                        </p>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% block extra_js %}
+<script>
+// Contact functionality (placeholder)
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners for contact buttons
+    const messageBtn = document.querySelector('button[data-action="message"]');
+    const phoneBtn = document.querySelector('button[data-action="phone"]');
+    const favoriteBtn = document.querySelector('button[data-action="favorite"]');
+    
+    // These would integrate with your backend APIs
+});
+</script>
+{% endblock %}
+{% endblock %}

@@ -23,12 +23,16 @@ if [ $? -ne 0 ]; then
     pip install django fastmcp
 fi
 
-# Set Django settings module
+# Set Django settings module and Python path
 export DJANGO_SETTINGS_MODULE=piata_ro.settings
+export PYTHONPATH="../:$PYTHONPATH"
+
+# Change to parent directory to access Django project
+cd ..
 
 # Start the Django SQL Agent
 echo "🔥 Starting Django SQL Agent on port 8002..."
-python django_sql_agent.py
+python awesome-mcp-servers/django_sql_agent.py
 
 echo "✅ Django SQL Agent started successfully!"
 echo "🔌 Available MCP tools:"

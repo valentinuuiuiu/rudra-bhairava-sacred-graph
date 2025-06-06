@@ -7,23 +7,28 @@ import asyncio
 import json
 import os
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
+import argparse # Added for command-line arguments
 
 import httpx
 from dotenv import load_dotenv
+from fastmcp import FastMCP # Added for MCP server functionality
 
 # Load environment variables
 load_dotenv()
 
-class PiataRoAgent:
+# Initialize FastMCP server for stock agent
+mcp = FastMCP("Piața.ro Stock Agent") # Changed from PiataRoAgent to mcp
+
+class PiataRoStockAgent: # Renamed class for clarity
     """Agent for interacting with Piata.ro marketplace through MCP server"""
     
-    def __init__(self, mcp_server_url: str = "http://localhost:8080"):
+    def __init__(self, mcp_server_url: str = "http://localhost:8080"): # This might need adjustment if the agent itself is an MCP server
         """
         Initialize the agent with MCP server connection details.
         
         Args:
-            mcp_server_url: URL of the MCP server
+            mcp_server_url: URL of the MCP server (likely the Django app's MCP endpoint if this agent calls other tools)
         """
         self.mcp_server_url = mcp_server_url
         self.client = httpx.AsyncClient(timeout=30.0)
@@ -34,9 +39,11 @@ class PiataRoAgent:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.client.aclose()
     
+    # This method seems to be for calling *another* MCP server.
+    # If this agent *is* the MCP server, its tools will be defined with @mcp.tool()
     async def call_mcp_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
         """
-        Call an MCP tool with the given parameters.
+        Call an MCP tool on a remote MCP server.
         
         Args:
             tool_name: Name of the MCP tool to call
@@ -65,10 +72,50 @@ class PiataRoAgent:
         except Exception as e:
             return {"error": f"Unexpected error: {str(e)}"}
     
+    # Example tool for the Stock Agent MCP Server
+    @mcp.tool()
+    async def get_product_stock(self, product_id: str) -> Dict[str, Any]:
+        """
+        Retrieves stock information for a given product ID.
+        This is a placeholder and should be implemented to connect to the actual database or inventory system.
+        """
+        # In a real scenario, this would query a database or an inventory API
+        # For now, returning dummy data
+        if product_id == "123":
+            return {"product_id": product_id, "name": "Laptop Dell XPS", "stock_level": 15, "status": "In Stock"}
+        elif product_id == "456":
+            return {"product_id": product_id, "name": "Tastatura Mecanica", "stock_level": 0, "status": "Out of Stock"}
+        else:
+            return {"product_id": product_id, "stock_level": "N/A", "status": "Product not found"}
+
+    @mcp.tool()
+    async def update_stock_level(self, product_id: str, new_stock_level: int, reason: str) -> Dict[str, Any]:
+        """
+        Updates the stock level for a given product ID.
+        This is a placeholder.
+        """
+        # In a real scenario, this would update the database or inventory system
+        print(f"Stock level for product {product_id} updated to {new_stock_level} due to: {reason}")
+        return {"product_id": product_id, "new_stock_level": new_stock_level, "status": "Update successful"}
+
+    @mcp.tool()
+    async def get_low_stock_alerts(self, threshold: int = 5) -> Dict[str, Any]:
+        """
+        Identifies products with stock levels below a specified threshold.
+        This is a placeholder.
+        """
+        # Dummy low stock products
+        low_stock_items = [
+            {"product_id": "789", "name": "Mouse Wireless", "stock_level": 3, "threshold": threshold},
+            {"product_id": "101", "name": "Monitor LED", "stock_level": 2, "threshold": threshold},
+        ]
+        return {"low_stock_alerts": low_stock_items, "count": len(low_stock_items)}
+    
     async def get_marketplace_overview(self) -> str:
         """
-        Get a comprehensive overview of the marketplace.
-        
+        Get a comprehensive overview of the marketplace by calling the Django MCP server.
+        This method assumes the Django app exposes an MCP server with the necessary tools.
+        The mcp_server_url for PiataRoStockAgent instance should point to the Django MCP.
         Returns:
             Formatted string with marketplace overview
         """
@@ -324,22 +371,36 @@ class PiataRoAgent:
         except Exception as e:
             return f"Error generating category insights: {str(e)}"
 
-# Example usage and testing functions
-async def test_agent():
-    """Test the agent functionality"""
-    async with PiataRoAgent() as agent:
-        print("=== Marketplace Overview ===")
-        overview = await agent.get_marketplace_overview()
-        print(overview)
-        
-        print("\n=== Search Test ===")
-        search_results = await agent.search_and_analyze("laptop", max_price=1000)
-        print(search_results)
-        
-        print("\n=== Category Insights Test ===")
-        insights = await agent.get_category_insights("Electronics")
-        print(insights)
-
+# Main execution block
 if __name__ == "__main__":
-    # Run tests
-    asyncio.run(test_agent())
+    parser = argparse.ArgumentParser(description="Piata.ro Stock MCP Agent")
+    parser.add_argument("--port", type=int, default=os.getenv("STOCK_AGENT_PORT", 8003), help="Port to run the MCP server on")
+    parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the MCP server to")
+    args = parser.parse_args()
+
+    print(f"🚀 Starting Piața.ro Stock Agent MCP Server on {args.host}:{args.port}")
+    
+    # Example: If this agent needs to *call* the main Django MCP server for some operations
+    # main_mcp_url = os.getenv("MAIN_DJANGO_MCP_URL", "http://localhost:8000/mcp") # Assuming Django MCP is at /mcp
+    # stock_agent_logic = PiataRoStockAgent(mcp_server_url=main_mcp_url)
+    # You could then potentially pass stock_agent_logic to tools if they need to make calls.
+    # For now, the tools are self-contained or placeholders.
+
+    # Run the FastMCP server with the defined tools
+    # The tools are automatically discovered by FastMCP from the @mcp.tool() decorators
+    mcp.run(host=args.host, port=args.port)
+
+# Example usage (if you were to run this agent's logic directly, not as a server)
+# async def main_logic():
+#     # Example: Initialize with the URL of the *main* MCP server (e.g., Django's)
+#     # if this agent needs to *call* tools from it.
+#     # agent_mcp_url = os.getenv("MAIN_DJANGO_MCP_URL", "http://localhost:8000/mcp") 
+#     # async with PiataRoStockAgent(mcp_server_url=agent_mcp_url) as agent:
+#     #     overview = await agent.get_marketplace_overview() # This would call the Django MCP
+#     #     print(overview)
+# 
+#     #     stock_info = await agent.get_product_stock("123") # This is a tool *provided* by this agent
+#     #     print(json.dumps(stock_info, indent=2))
+# 
+# if __name__ == "__main__" and not (os.getenv("RUN_MCP_SERVER_MODE") == "true"): # Avoid running if in server mode
+#    asyncio.run(main_logic())

@@ -1,135 +1,216 @@
-# Piața RO Project - Current State & Next Steps
+# Piața RO Django Marketplace - Project Scratchpad
 
-## Project Overview
-This is a Django-based Romanian marketplace platform (`piata-ro-project`) with PraisonAI integration for intelligent query processing. The project is ready for continued debugging and improvement.
+## Project Goal
+Develop a modern, full-featured online marketplace (classifieds site) for Romania, similar to OLX.ro and Publi24.ro, using Django and potentially integrating with PraisonAI for AI-powered features.
 
-## Current Status ✅
+## Current State & Recent Accomplishments (as of June 6, 2025)
 
-### Infrastructure
-- **Django Server**: Ready to start/restart
-- **Virtual Environment**: Available at `/home/shiva/Desktop/piata-ro-project/venv/`
-- **Database**: SQLite with sample data (8 listings across categories: Electronics, Cars, Real Estate)
-- **Dependencies**: All installed including Django 4.2.22, PraisonAI, FastAPI, etc.
+### ✅ **Completed Major Tasks:**
 
-### Working Endpoints
-1. **API Listings**: `GET http://localhost:8000/api/listings/` ✅
-2. **Natural Language Query**: `POST http://localhost:8000/api/query/` ✅
-3. **MCP Processor**: `POST http://localhost:8000/mcp/process/` ⚠️ (debugging in progress)
-4. **MCP Agents**: `GET http://localhost:8000/mcp/agents/` ✅
+*   **Frontend Romanian Localization:**
+    *   Navigation links in `base.html` and `index.html` correctly use Django URL tags pointing to frontend views.
+    *   `categories.html` template updated to display hierarchical category structure (main categories and subcategories).
+    *   `category_detail.html` template enhanced with subcategory display and improved breadcrumbs.
+    *   All navigation elements consistently use Romanian and link to correct frontend views.
 
-## Progress Made on PraisonAI Integration 🔧
+*   **Backend & Infrastructure:**
+    *   Django development server running successfully on port 8000.
+    *   MCP agents (advertising, django_sql, stock) fixed and working properly.
+    *   Agent startup scripts updated with correct virtual environment activation and Django settings.
+    *   `piata_ro/settings.py` configured with `'0.0.0.0'` in `ALLOWED_HOSTS`.
 
-### Issues Identified & Fixed:
-1. **YAML Parsing Error**: ✅ Fixed
-   - **Problem**: JSON objects embedded directly in YAML causing syntax errors
-   - **Solution**: Converted JSON structures to YAML-compatible format
-   - **Result**: Error resolved, framework properly configured
+*   **Category Structure & Data:**
+    *   **MAJOR UPDATE:** Analyzed and implemented actual category structures from Publi24.ro and OLX.ro.
+    *   Created comprehensive Django management command `populate_romanian_data.py` with real Romanian categories.
+    *   Database successfully populated with 53+ Romanian categories and subcategories matching major Romanian classifieds sites.
+    *   Sample listings created with proper category associations and Romanian content.
+    *   Categories include: Imobiliare, Auto/Moto, Electronice, Locuri de Muncă, Servicii, Modă, Casă/Grădină, Sport, Mama/Copilul, Animale, Agro/Industrie.
 
-2. **Framework Configuration**: ✅ Fixed
-   - **Problem**: Used `agents:` instead of `roles:` structure
-   - **Solution**: Updated to use PraisonAI format: `roles:` with nested `tasks:`
-   - **Result**: Configuration now uses correct PraisonAI framework structure
+*   **Templates & Views:**
+    *   All frontend views properly implemented: `home`, `categories`, `category_detail`, `listings`, `listing_detail`, `add_listing`, `profile`, `messages`, `favorites`, `search`.
+    *   Templates use template inheritance and consistent Romanian localization.
+    *   Home page includes dynamic statistics (categories count, listings count).
 
-3. **Data Integration**: ✅ Improved
-   - **Current Status**: Agent configuration now includes actual marketplace listings
-   - **Implementation**: Modified `views.py` to filter and include real listing data
-   - **YAML**: `temp_marketplace_agent.yaml` contains actual iPhone, Samsung, MacBook listings
+*   **MCP Agent Integration:**
+    *   Fixed FastMCP compatibility issues (removed invalid port parameters).
+    *   Django SQL Agent working with correct PYTHONPATH and Django settings.
+    *   Advertising Agent operational with tools for listing optimization and promotional content.
+    *   Both agents can be started individually and are MCP-compliant.
 
-### Current YAML Configuration Status:
-- **File**: `temp_marketplace_agent.yaml` - contains real marketplace data
-- **Structure**: Uses correct `framework: praisonai` with `roles:` structure
-- **Content**: Includes actual listings (iPhone 15 Pro Max, Samsung Galaxy S24, MacBook Pro M3)
-- **Data**: Shows prices, locations, and conditions for matching items
+*   **User Authentication System:**
+    *   Successfully implemented proper frontend authentication system.
+    *   Fixed authentication redirects.
+    *   Users can register and login via frontend forms.
 
-### MCP Agents
-- **Location**: `awesome-mcp-servers/` directory
-- **Available**: Advertising Agent (port 8001), Django SQL Agent (port 8002), Stock Agent (port 8003)
-- **Status**: Ready to test once PraisonAI issue is resolved
+## Next Steps & To-Do
 
-## Immediate Next Steps 🚀
+### 1. **Image Upload Enhancement:**
+    *   **Priority:** Enhance image upload functionality for listings.
+    *   **Task:** Implement multiple image upload support.
+    *   **Task:** Add image preview functionality for uploads.
+    *   **Task:** Ensure proper image storage and optimization.
+    *   **Task:** Test image display in listings.
 
-1. **Start Django Server**:
-   ```bash
-   cd /home/shiva/Desktop/piata-ro-project
-   source venv/bin/activate
-   python manage.py runserver
-   ```
+### 2. **Gmail Authentication Implementation:**
+    *   **Priority:** Add OAuth2 authentication with Google.
+    *   **Task:** Install and configure django-allauth for social authentication.
+    *   **Task:** Set up Google OAuth credentials in Google Developer Console.
+    *   **Task:** Configure callback URLs and add social authentication templates.
+    *   **Task:** Test Gmail login flow.
+    *   **Task:** Update navigation to include Google login options.
 
-2. **Test PraisonAI with Real Data**:
-   ```bash
-   # Test iPhone query (should return iPhone 15 Pro Max listing)
-   curl -X POST http://localhost:8000/mcp/process/ -H "Content-Type: application/json" -d '{"query": "show me iphone"}'
-   
-   # Test electronics query (should return multiple electronics)
-   curl -X POST http://localhost:8000/mcp/process/ -H "Content-Type: application/json" -d '{"query": "show me electronics"}'
-   ```
+### 3. **Listing Management:**
+    *   **Task:** Test listing creation form with enhanced file upload functionality.
+    *   **Task:** Implement listing editing and deletion features.
+    *   **Task:** Add listing status management (pending, active, sold, expired).
+    *   **Task:** Implement listing expiration and renewal system.
 
-3. **Verify Agent Behavior**:
-   - Confirm PraisonAI returns specific listings with prices and locations
-   - Test different queries: "cars", "real estate", "samsung"
-   - Ensure responses include actual marketplace data, not generic advice
+### 4. **Advanced Features:**
+    *   **Task:** Enhance search functionality with filters (price range, location, category).
+    *   **Task:** Add favorites system functionality.
+    *   **Task:** Implement basic messaging system between users.
+    *   **Task:** Add user profile management.
 
-4. **Debug if Issues Persist**:
-   - Check Django logs for errors
-   - Review generated YAML in `temp_marketplace_agent.yaml`
-   - Test fallback with `api/query/` endpoint
+### 5. **MCP Agent Testing & Integration:**
+    *   **Task:** Test advertising agent tools with real listing data.
+    *   **Task:** Integrate agent-generated content into listing creation flow.
+    *   **Task:** Test Django SQL agent database operations.
+    *   **Task:** Document agent APIs and usage examples.
 
-5. **Optional - MCP Agents Testing**:
-   ```bash
-   cd awesome-mcp-servers
-   ./start-agents.sh all
-   # Test on ports 8001, 8002, 8003
-   ```
+### 6. **Production Readiness:**
+    *   **Task:** Configure proper static file serving.
+    *   **Task:** Add proper error handling and 404/500 pages.
+    *   **Task:** Implement basic SEO optimizations.
+    *   **Task:** Add basic security measures (rate limiting, etc.).
 
-## Key Files Modified
-- **`piata_ro/views.py`**: ✅ Enhanced agent configuration generation
-  - Added real marketplace data integration
-  - Improved YAML structure with actual listings
-  - Enhanced error handling and debugging
-- **`temp_marketplace_agent.yaml`**: ✅ Contains real listing data
-- **Agent Templates**: Available in `agents/` directory for reference
+## Technical Details
 
-## Environment
-- **OS**: Linux with zsh shell
-- **Python**: 3.11.9 (venv available)
-- **OpenAI API**: Available in environment
-- **Working Directory**: `/home/shiva/Desktop/piata-ro-project`
+### **Database Schema:**
+*   **Categories:** 53+ Romanian categories with hierarchical structure
+*   **Listings:** Full listing model with images, pricing, location, status
+*   **Users:** Django User model with profiles
+*   **Messages:** User-to-user messaging system
+*   **Favorites:** User favorites tracking
 
-## What Should Work Now:
-1. **Django Server**: Should start without issues
-2. **PraisonAI Agent**: Should have access to real marketplace data
-3. **Query Processing**: Should return specific listings, not generic advice
-4. **Data Integration**: Listings include prices, locations, and details
+### **Server Configuration:**
+*   **Django Server:** `python manage.py runserver 0.0.0.0:8000`
+*   **Advertising Agent:** `cd awesome-mcp-servers && ./start-advertising-agent.sh`
+*   **Django SQL Agent:** `cd awesome-mcp-servers && ./start-django-sql-agent.sh`
+*   **Stock Agent:** `cd awesome-mcp-servers && ./start-stock-agent.sh`
 
-## Expected Behavior:
-When querying "show me iphone", PraisonAI should respond with:
-- iPhone 15 Pro Max - Excellent Condition
-- Price: 4500.00 RON
-- Location: Bucharest
-- Category: Electronics
+### **Key Files:**
+*   `marketplace/management/commands/populate_romanian_data.py` - Data population script
+*   `marketplace/templates/marketplace/categories.html` - Hierarchical category display
+*   `marketplace/templates/marketplace/category_detail.html` - Enhanced category pages
+*   `awesome-mcp-servers/advertising-agent.py` - Fixed MCP compatibility
+*   `awesome-mcp-servers/django_sql_agent.py` - Fixed Django integration
 
-## Error Progression (Debugging Success):
-1. ~~YAML parsing errors~~ ✅ **FIXED**
-2. ~~Framework structure errors~~ ✅ **FIXED**  
-3. ~~Data integration~~ ✅ **IMPROVED**
-4. **Current Goal**: Verify PraisonAI uses real data in responses
+## Notes & Reminders
 
-## Sample Working Query
-```bash
-# Test PraisonAI with real marketplace data:
-curl -X POST http://localhost:8000/mcp/process/ -H "Content-Type: application/json" -d '{"query": "show me iphone"}'
+*   **Virtual environment:** `venv` (activated and working)
+*   **Main Django app:** `marketplace`
+*   **Database:** SQLite with Romanian categories and sample data
+*   **MCP Agents:** Fixed and operational
+*   **Current Status:** Auth system implemented, working on image upload enhancement and Gmail authentication
 
-# Fallback test with Direct Database Query:
-curl -X POST http://localhost:8000/api/query/ -H "Content-Type: application/json" -d '{"query": "show me electronics under 5000 RON"}'
-```
+## 🚀 **DETAILED ACTION PLAN - PHASE BY PHASE**
 
-## Expected Result
-The PraisonAI endpoint should now return specific marketplace listings with actual data instead of generic marketplace advice. The agent configuration includes real iPhone, Samsung, and MacBook listings with prices and locations.
+### **PHASE 1: IMAGE UPLOAD ENHANCEMENT (45 mins)**
+**Issue:** Need to support multiple images per listing with proper preview
+
+#### Tasks:
+1. **Update models:**
+   - Ensure ListingImage model supports multiple images per listing
+   - Add image order/sequence field if needed
+
+2. **Enhance form handling:**
+   - Update ListingForm to handle multiple image uploads
+   - Implement JavaScript for image preview before upload
+   - Add validation for image size and formats
+
+3. **Improve templates:**
+   - Add multiple file input support in add_listing.html
+   - Create image carousel for listing_detail.html
+   - Add image management in user dashboard
+
+**Expected Outcome:** Users can upload and manage multiple images per listing
 
 ---
 
-**READY TO CONTINUE**: 
-1. Start Django server: `python manage.py runserver`
-2. Test PraisonAI with real data queries
-3. Verify agent returns specific listings, not generic advice
-4. Debug any remaining issues with data integration
+### **PHASE 2: GMAIL AUTHENTICATION (60 mins)**
+**Issue:** Need to implement social authentication with Google
+
+#### Tasks:
+1. **Install and configure django-allauth:**
+   - Add to INSTALLED_APPS and settings
+   - Configure authentication backends
+   - Set up URLs and templates
+
+2. **Google API setup:**
+   - Create project in Google Developer Console
+   - Generate OAuth credentials
+   - Configure callback URLs
+
+3. **User interface integration:**
+   - Add Google login buttons to login/register pages
+   - Handle user profile linking between Google and local accounts
+   - Test authentication flow
+
+**Expected Outcome:** Users can sign in with their Google accounts
+
+---
+
+### **PHASE 3: LISTING MANAGEMENT ENHANCEMENTS (45 mins)**
+**Current Status:** Basic listing functionality exists, needs improvements
+
+#### Tasks:
+1. **Complete listing CRUD operations:**
+   - Enhance edit_listing view and template
+   - Improve delete_listing with confirmation
+   - Add listing status management UI
+
+2. **User dashboard improvements:**
+   - Show user's active/inactive/sold listings
+   - Add quick actions for listing management
+   - Implement listing statistics
+
+**Expected Outcome:** Complete listing management system with user-friendly interface
+
+---
+
+### **PHASE 4: SEARCH & FILTERING ENHANCEMENTS (30 mins)**
+**Current Status:** Basic search implemented, needs improvement
+
+#### Tasks:
+1. **Enhance search functionality:**
+   - Improve price range and location filters
+   - Add sorting options (newest, price high/low)
+   - Implement saved searches feature
+
+2. **User experience improvements:**
+   - Add instant search results
+   - Implement search suggestions
+   - Improve no results handling
+
+**Expected Outcome:** Robust and user-friendly search system
+
+---
+
+## 🎯 **IMMEDIATE START PRIORITIES (Next 15 minutes)**
+
+1. **Enhance Image Upload** (CRITICAL)
+   - Start by implementing multiple image upload support
+   - Add image preview functionality
+
+2. **Implement Gmail Authentication**
+   - Install django-allauth
+   - Configure Google OAuth integration
+
+## 📋 **SUCCESS METRICS**
+
+- [ ] Users can upload multiple images per listing
+- [ ] Images have preview functionality before upload
+- [ ] Users can sign in with Google accounts
+- [ ] All pages load without errors
+- [ ] Search and filtering work properly
+- [ ] Application is production-ready

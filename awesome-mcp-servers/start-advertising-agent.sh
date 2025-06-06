@@ -21,7 +21,7 @@ fi
 cd awesome-mcp-servers
 
 # Start the MCP server
-echo "🎯 Advertising Helper Agent is now running!"
+echo "🎯 Advertising Helper Agent is now running on Port 8001!"
 echo "📈 Available tools:"
 echo "   • optimize_listing_title - Optimize titles for better visibility"
 echo "   • generate_description_template - Create professional descriptions"
@@ -37,4 +37,4 @@ echo ""
 echo "Press Ctrl+C to stop the agent"
 echo "----------------------------------------"
 
-python advertising-agent.py
+python advertising-agent.py --port 8001

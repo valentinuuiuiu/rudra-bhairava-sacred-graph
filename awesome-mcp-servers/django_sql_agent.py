@@ -242,7 +242,7 @@ def create_listing(listing_data: ListingCreateData) -> Dict[str, Any]:
     """
     try:
         # Import here to avoid circular imports
-        from api.models import Listing, Category
+        from marketplace.models import Listing, Category
         
         with transaction.atomic():
             # Verify user exists
@@ -298,7 +298,7 @@ def search_listings(search_query: ListingSearchQuery) -> Dict[str, Any]:
         Dictionary with search results
     """
     try:
-        from api.models import Listing
+        from marketplace.models import Listing
         
         # Start with all listings
         queryset = Listing.objects.select_related('category', 'user').all()
@@ -368,7 +368,7 @@ def get_database_stats() -> Dict[str, Any]:
         Dictionary with database statistics
     """
     try:
-        from api.models import Listing, Category
+        from marketplace.models import Listing, Category
         
         # Get counts
         total_users = User.objects.count()
@@ -470,6 +470,77 @@ def execute_custom_query(query: str, params: Optional[List] = None) -> Dict[str,
             "success": False,
             "error": f"Query execution failed: {str(e)}",
             "results": []
+        }
+
+@mcp.tool()
+def get_marketplace_context() -> Dict[str, Any]:
+    """
+    Get comprehensive marketplace context including categories, subcategories, and recent listings.
+    
+    Returns:
+        Dictionary with complete marketplace information
+    """
+    try:
+        from marketplace.models import Listing, Category
+        
+        # Get categories with hierarchical structure
+        main_categories = Category.objects.filter(parent__isnull=True).values(
+            'id', 'name', 'slug', 'icon', 'color'
+        )
+        
+        # Get subcategories grouped by parent
+        subcategories = {}
+        for subcat in Category.objects.filter(parent__isnull=False).values(
+            'id', 'name', 'slug', 'parent_id', 'icon', 'color'
+        ):
+            parent_id = subcat['parent_id']
+            if parent_id not in subcategories:
+                subcategories[parent_id] = []
+            subcategories[parent_id].append(subcat)
+        
+        # Build complete category structure
+        categories_structure = []
+        for category in main_categories:
+            cat_data = dict(category)
+            cat_data['subcategories'] = subcategories.get(category['id'], [])
+            cat_data['listings_count'] = Listing.objects.filter(
+                category_id__in=[category['id']] + [sub['id'] for sub in cat_data['subcategories']]
+            ).count()
+            categories_structure.append(cat_data)
+        
+        # Get overall statistics
+        listings_count = Listing.objects.count()
+        active_listings = Listing.objects.filter(status='active').count()
+        featured_count = Listing.objects.filter(is_featured=True).count()
+        
+        # Get recent listings for context
+        recent_listings = list(Listing.objects.filter(status='active').select_related('category', 'user').values(
+            'id', 'title', 'price', 'currency', 'location', 'category__name', 'created_at'
+        ).order_by('-created_at')[:20])
+        
+        # Convert datetime objects to ISO format strings
+        for listing in recent_listings:
+            if listing['created_at']:
+                listing['created_at'] = listing['created_at'].isoformat()
+        
+        return {
+            "success": True,
+            "marketplace_context": {
+                'categories': list(main_categories),  # Simple format
+                'categories_structure': categories_structure,  # Enhanced structure
+                'total_listings': listings_count,
+                'active_listings': active_listings,
+                'featured_listings': featured_count,
+                'recent_listings': recent_listings,
+                'last_updated': datetime.now().isoformat()
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get marketplace context: {str(e)}",
+            "marketplace_context": {}
         }
 
 # Run the MCP server
