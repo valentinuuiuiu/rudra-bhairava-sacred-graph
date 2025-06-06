@@ -1,9 +1,11 @@
 import reflex as rx
-from frontend_reflex.state import AppState
-from frontend_reflex.components.navbar import navbar
-from frontend_reflex.components.search import search_bar
+
 from frontend_reflex.components.categories import category_list
 from frontend_reflex.components.listings import listings_grid
+from frontend_reflex.components.navbar import navbar
+from frontend_reflex.components.search import search_bar
+from frontend_reflex.state import AppState
+
 
 def index() -> rx.Component:
     """The main page of the app."""

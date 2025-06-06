@@ -1,5 +1,7 @@
 import reflex as rx
+
 from frontend_reflex.state import AppState
+
 
 def search_bar() -> rx.Component:
     """The search bar component."""

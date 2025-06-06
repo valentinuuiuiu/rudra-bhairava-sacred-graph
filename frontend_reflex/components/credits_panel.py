@@ -1,6 +1,7 @@
 """Componenta pentru afișarea și gestionarea creditelor."""
 
 import reflex as rx
+
 from frontend_reflex.state import State
 
 
@@ -12,7 +13,6 @@ def credits_panel() -> rx.Component:
             rx.vstack(
                 # Titlu
                 rx.heading("Credite și Abonament", size="md", mb="4"),
-                
                 # Afișare credite curente
                 rx.hstack(
                     rx.icon("coin", color="yellow.500"),
@@ -25,7 +25,6 @@ def credits_panel() -> rx.Component:
                     spacing="2",
                     mb="3",
                 ),
-                
                 # Afișare abonament
                 rx.cond(
                     State.subscription_type,
@@ -50,7 +49,6 @@ def credits_panel() -> rx.Component:
                     ),
                     rx.text("Nu ai un abonament activ.", mb="4", color="gray.500"),
                 ),
-                
                 # Butoane pentru cumpărare credite
                 rx.heading("Cumpără credite", size="sm", mb="2"),
                 rx.hstack(
@@ -73,7 +71,6 @@ def credits_panel() -> rx.Component:
                     wrap="wrap",
                     mb="4",
                 ),
-                
                 # Butoane pentru abonamente
                 rx.heading("Abonamente", size="sm", mb="2"),
                 rx.vstack(
@@ -136,7 +133,6 @@ def credits_panel() -> rx.Component:
                     align_items="stretch",
                     width="100%",
                 ),
-                
                 # Informații despre utilizarea creditelor
                 rx.box(
                     rx.text(
@@ -158,7 +154,6 @@ def credits_panel() -> rx.Component:
                     border_radius="md",
                     font_size="sm",
                 ),
-                
                 width="100%",
                 align_items="start",
                 spacing="3",

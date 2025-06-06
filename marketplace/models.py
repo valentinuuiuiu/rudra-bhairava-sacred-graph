@@ -1,5 +1,5 @@
-from django.db import models
 from django.contrib.auth.models import User
+from django.db import models
 from django.utils.text import slugify
 
 
@@ -8,11 +8,17 @@ class Category(models.Model):
     slug = models.SlugField(max_length=100, unique=True)
     icon = models.CharField(max_length=50, blank=True, null=True)
     color = models.CharField(max_length=20, blank=True, null=True)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, blank=True, null=True, related_name='subcategories')
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name="subcategories",
+    )
 
     class Meta:
-        verbose_name_plural = 'Categories'
-        ordering = ['name']
+        verbose_name_plural = "Categories"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -25,23 +31,31 @@ class Category(models.Model):
 
 class Listing(models.Model):
     STATUS_CHOICES = (
-        ('pending', 'Pending'),
-        ('active', 'Active'),
-        ('sold', 'Sold'),
-        ('expired', 'Expired'),
-        ('rejected', 'Rejected'),
+        ("pending", "Pending"),
+        ("active", "Active"),
+        ("sold", "Sold"),
+        ("expired", "Expired"),
+        ("rejected", "Rejected"),
     )
 
     title = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    currency = models.CharField(max_length=3, default='RON')
+    currency = models.CharField(max_length=3, default="RON")
     location = models.CharField(max_length=100)
     images = models.JSONField(default=list)  # Store image URLs as JSON array
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='listings')
-    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='listings')
-    subcategory = models.ForeignKey(Category, on_delete=models.SET_NULL, blank=True, null=True, related_name='subcategory_listings')
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
+    category = models.ForeignKey(
+        Category, on_delete=models.CASCADE, related_name="listings"
+    )
+    subcategory = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="subcategory_listings",
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField(blank=True, null=True)
@@ -52,11 +66,11 @@ class Listing(models.Model):
     is_verified = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['status', 'created_at']),
-            models.Index(fields=['category', 'status']),
-            models.Index(fields=['user', 'status']),
+            models.Index(fields=["status", "created_at"]),
+            models.Index(fields=["category", "status"]),
+            models.Index(fields=["user", "status"]),
         ]
 
     def __str__(self):
@@ -64,35 +78,47 @@ class Listing(models.Model):
 
 
 class Message(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
-    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='messages', blank=True, null=True)
+    sender = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="sent_messages"
+    )
+    receiver = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="received_messages"
+    )
+    listing = models.ForeignKey(
+        Listing,
+        on_delete=models.CASCADE,
+        related_name="messages",
+        blank=True,
+        null=True,
+    )
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     is_read = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['created_at']
+        ordering = ["created_at"]
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
 
 
 class Favorite(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
-    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='favorited_by')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favorites")
+    listing = models.ForeignKey(
+        Listing, on_delete=models.CASCADE, related_name="favorited_by"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'listing')
-        ordering = ['-created_at']
+        unique_together = ("user", "listing")
+        ordering = ["-created_at"]
 
     def __str__(self):
         return f"{self.user.username} favorited {self.listing.title}"
 
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
     avatar = models.CharField(max_length=255, blank=True, null=True)
     bio = models.TextField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)

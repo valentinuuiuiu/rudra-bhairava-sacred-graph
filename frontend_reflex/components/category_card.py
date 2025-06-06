@@ -1,8 +1,8 @@
 """Componenta card categorie pentru Piata.ro."""
 
-import reflex as rx
 from typing import Optional
 
+import reflex as rx
 
 # Mapare categorii la icoane și culori
 CATEGORY_ICONS = {

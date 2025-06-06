@@ -1,8 +1,9 @@
 """Componenta card anunț pentru Piata.ro."""
 
-import reflex as rx
-from typing import Optional
 from datetime import datetime
+from typing import Optional
+
+import reflex as rx
 
 
 def listing_card(
@@ -23,7 +24,7 @@ def listing_card(
     date_display = ""
     if created_at:
         try:
-            date_obj = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+            date_obj = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
             date_display = date_obj.strftime("%d %b %Y")
         except (ValueError, AttributeError):
             date_display = created_at
@@ -49,7 +50,6 @@ def listing_card(
                     border_top_radius="md",
                 ),
             ),
-
             # Conținut anunț
             rx.box(
                 # Titlu anunț
@@ -60,7 +60,6 @@ def listing_card(
                     no_of_lines=2,
                     font_weight="600",
                 ),
-
                 # Preț
                 rx.text(
                     formatted_price,
@@ -69,7 +68,6 @@ def listing_card(
                     font_size="lg",
                     mb="1",
                 ),
-
                 # Locație
                 rx.hstack(
                     rx.icon("map-pin", size="xs", color="gray.500"),
@@ -81,7 +79,6 @@ def listing_card(
                     spacing="1",
                     mb="1",
                 ),
-
                 # Data publicării
                 rx.text(
                     date_display,
@@ -89,7 +86,6 @@ def listing_card(
                     font_size="xs",
                     mb="3",
                 ),
-
                 # Buton vezi detalii
                 rx.button(
                     "Vezi detalii",
@@ -98,10 +94,8 @@ def listing_card(
                     color_scheme="blue",
                     variant="outline",
                 ),
-
                 p="4",
             ),
-
             # Badge pentru anunțuri promovate
             rx.cond(
                 is_featured,
@@ -113,7 +107,6 @@ def listing_card(
                     right="2",
                 ),
             ),
-
             border="1px solid",
             border_color="gray.200",
             border_radius="md",

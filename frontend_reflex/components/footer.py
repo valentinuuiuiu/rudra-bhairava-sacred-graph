@@ -10,7 +10,9 @@ def footer() -> rx.Component:
             rx.hstack(
                 rx.vstack(
                     rx.heading("Piata.ro", size="md", mb="2"),
-                    rx.text("Cel mai bun marketplace pentru cumpărare și vânzare în România."),
+                    rx.text(
+                        "Cel mai bun marketplace pentru cumpărare și vânzare în România."
+                    ),
                     align_items="start",
                 ),
                 rx.vstack(

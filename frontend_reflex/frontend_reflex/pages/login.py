@@ -1,12 +1,15 @@
 import reflex as rx
-from frontend_reflex.state import AuthState
+
 from frontend_reflex.components.navbar import navbar
+from frontend_reflex.state import AuthState
+
 
 class LoginFormState(rx.State):
     """Login form state."""
+
     username: str = ""
     password: str = ""
-    
+
     def handle_submit(self):
         """Handle form submission."""
         return AuthState.login(self.username, self.password)

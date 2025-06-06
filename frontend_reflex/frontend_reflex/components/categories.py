@@ -1,5 +1,7 @@
 import reflex as rx
+
 from frontend_reflex.state import AppState
+
 
 def category_list() -> rx.Component:
     """The category list component."""
@@ -17,7 +19,11 @@ def category_list() -> rx.Component:
                     category["name"],
                     on_click=lambda c=category: AppState.set_category(c["id"]),
                     variant="ghost",
-                    color_scheme="blue" if AppState.selected_category == category["id"] else "gray",
+                    color_scheme=(
+                        "blue"
+                        if AppState.selected_category == category["id"]
+                        else "gray"
+                    ),
                 ),
             ),
             spacing="2",

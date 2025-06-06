@@ -2,47 +2,53 @@
 
 import reflex as rx
 
-from frontend_reflex.components.navbar import navbar
 from frontend_reflex.components.footer import footer
+from frontend_reflex.components.navbar import navbar
 from frontend_reflex.state import State
 
 
 class RegisterState(State):
     """Starea pentru pagina de înregistrare."""
-    
+
     username: str = ""
     email: str = ""
     password: str = ""
     confirm_password: str = ""
     show_password: bool = False
     agree_terms: bool = False
-    
+
     def toggle_show_password(self):
         """Comută vizibilitatea parolei."""
         self.show_password = not self.show_password
-    
+
     def handle_register(self):
         """Gestionează procesul de înregistrare."""
-        if not self.username or not self.email or not self.password or not self.confirm_password:
+        if (
+            not self.username
+            or not self.email
+            or not self.password
+            or not self.confirm_password
+        ):
             self.error = "Vă rugăm să completați toate câmpurile."
             return
-        
+
         if not self.agree_terms:
             self.error = "Trebuie să fiți de acord cu termenii și condițiile."
             return
-        
+
         if self.password != self.confirm_password:
             self.error = "Parolele nu se potrivesc."
             return
-        
-        return self.register(self.username, self.email, self.password, self.confirm_password)
+
+        return self.register(
+            self.username, self.email, self.password, self.confirm_password
+        )
 
 
 def register() -> rx.Component:
     """Componenta paginii de înregistrare."""
     return rx.box(
         navbar(),
-        
         rx.center(
             rx.card(
                 rx.card_header(
@@ -143,6 +149,5 @@ def register() -> rx.Component:
             ),
             py="20",
         ),
-        
         footer(),
     )

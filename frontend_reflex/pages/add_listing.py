@@ -1,12 +1,13 @@
 """Pagina pentru adăugarea unui anunț nou."""
 
-import reflex as rx
-from typing import List, Dict, Any, Optional
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from frontend_reflex.components.navbar import navbar
-from frontend_reflex.components.footer import footer
+import reflex as rx
+
 from frontend_reflex.components.credits_panel import credits_panel
+from frontend_reflex.components.footer import footer
+from frontend_reflex.components.navbar import navbar
 from frontend_reflex.state import State
 
 
@@ -168,11 +169,9 @@ def add_listing() -> rx.Component:
     """Pagina pentru adăugarea unui anunț nou."""
     return rx.box(
         navbar(),
-
         rx.box(
             rx.vstack(
                 rx.heading("Adaugă un anunț nou", size="xl", mb="6"),
-
                 # Afișare erori/succes
                 rx.cond(
                     AddListingState.form_error,
@@ -192,14 +191,12 @@ def add_listing() -> rx.Component:
                         mb="4",
                     ),
                 ),
-
                 # Formular și panou credite
                 rx.hstack(
                     # Formular anunț
                     rx.form(
                         rx.vstack(
                             rx.heading("Informații anunț", size="md", mb="4"),
-
                             # Titlu
                             rx.form_control(
                                 rx.form_label("Titlu", html_for="title"),
@@ -212,7 +209,6 @@ def add_listing() -> rx.Component:
                                 ),
                                 is_required=True,
                             ),
-
                             # Descriere
                             rx.form_control(
                                 rx.form_label("Descriere", html_for="description"),
@@ -226,7 +222,6 @@ def add_listing() -> rx.Component:
                                 ),
                                 is_required=True,
                             ),
-
                             # Preț și monedă
                             rx.hstack(
                                 rx.form_control(
@@ -252,7 +247,6 @@ def add_listing() -> rx.Component:
                                 ),
                                 width="100%",
                             ),
-
                             # Locație
                             rx.form_control(
                                 rx.form_label("Locație", html_for="location"),
@@ -265,7 +259,6 @@ def add_listing() -> rx.Component:
                                 ),
                                 is_required=True,
                             ),
-
                             # Categorie și subcategorie
                             rx.hstack(
                                 rx.form_control(
@@ -273,7 +266,9 @@ def add_listing() -> rx.Component:
                                     rx.select(
                                         rx.foreach(
                                             AddListingState.categories,
-                                            lambda cat: rx.option(cat["name"], value=cat["id"]),
+                                            lambda cat: rx.option(
+                                                cat["name"], value=cat["id"]
+                                            ),
                                         ),
                                         id="category",
                                         placeholder="Selectează categoria",
@@ -285,11 +280,15 @@ def add_listing() -> rx.Component:
                                     width="50%",
                                 ),
                                 rx.form_control(
-                                    rx.form_label("Subcategorie", html_for="subcategory"),
+                                    rx.form_label(
+                                        "Subcategorie", html_for="subcategory"
+                                    ),
                                     rx.select(
                                         rx.foreach(
                                             AddListingState.subcategories,
-                                            lambda subcat: rx.option(subcat["name"], value=subcat["id"]),
+                                            lambda subcat: rx.option(
+                                                subcat["name"], value=subcat["id"]
+                                            ),
                                         ),
                                         id="subcategory",
                                         placeholder="Selectează subcategoria",
@@ -301,13 +300,14 @@ def add_listing() -> rx.Component:
                                 ),
                                 width="100%",
                             ),
-
                             # Încărcare imagini
                             rx.form_control(
                                 rx.form_label("Imagini", html_for="images"),
                                 rx.file_upload(
                                     rx.file_upload_button("Încarcă imagini"),
-                                    rx.file_upload_drop_zone("Trage și plasează imaginile aici"),
+                                    rx.file_upload_drop_zone(
+                                        "Trage și plasează imaginile aici"
+                                    ),
                                     rx.file_upload_preview(),
                                     id="images",
                                     multiple=True,
@@ -315,10 +315,10 @@ def add_listing() -> rx.Component:
                                     max_files=10,
                                 ),
                             ),
-
                             # Opțiuni de promovare
-                            rx.heading("Opțiuni de promovare", size="md", mt="6", mb="4"),
-
+                            rx.heading(
+                                "Opțiuni de promovare", size="md", mt="6", mb="4"
+                            ),
                             # Tip anunț
                             rx.form_control(
                                 rx.form_label("Tip anunț", html_for="listing_type"),
@@ -327,31 +327,55 @@ def add_listing() -> rx.Component:
                                         rx.radio(
                                             rx.vstack(
                                                 rx.text("Standard", font_weight="bold"),
-                                                rx.text("Vizibilitate normală", font_size="xs"),
+                                                rx.text(
+                                                    "Vizibilitate normală",
+                                                    font_size="xs",
+                                                ),
                                                 align_items="start",
                                             ),
                                             value="standard",
                                         ),
                                         rx.radio(
                                             rx.vstack(
-                                                rx.text("Promovat", font_weight="bold", color="blue.500"),
-                                                rx.text("Afișat în secțiunea de anunțuri promovate", font_size="xs"),
+                                                rx.text(
+                                                    "Promovat",
+                                                    font_weight="bold",
+                                                    color="blue.500",
+                                                ),
+                                                rx.text(
+                                                    "Afișat în secțiunea de anunțuri promovate",
+                                                    font_size="xs",
+                                                ),
                                                 align_items="start",
                                             ),
                                             value="promoted",
                                         ),
                                         rx.radio(
                                             rx.vstack(
-                                                rx.text("Premium", font_weight="bold", color="purple.500"),
-                                                rx.text("Afișat în partea de sus a listei", font_size="xs"),
+                                                rx.text(
+                                                    "Premium",
+                                                    font_weight="bold",
+                                                    color="purple.500",
+                                                ),
+                                                rx.text(
+                                                    "Afișat în partea de sus a listei",
+                                                    font_size="xs",
+                                                ),
                                                 align_items="start",
                                             ),
                                             value="premium",
                                         ),
                                         rx.radio(
                                             rx.vstack(
-                                                rx.text("VIP", font_weight="bold", color="orange.500"),
-                                                rx.text("Afișat în partea de sus + evidențiat", font_size="xs"),
+                                                rx.text(
+                                                    "VIP",
+                                                    font_weight="bold",
+                                                    color="orange.500",
+                                                ),
+                                                rx.text(
+                                                    "Afișat în partea de sus + evidențiat",
+                                                    font_size="xs",
+                                                ),
                                                 align_items="start",
                                             ),
                                             value="vip",
@@ -364,7 +388,6 @@ def add_listing() -> rx.Component:
                                     on_change=AddListingState.set_listing_type,
                                 ),
                             ),
-
                             # Durată anunț
                             rx.form_control(
                                 rx.form_label("Durată anunț", html_for="duration"),
@@ -380,7 +403,6 @@ def add_listing() -> rx.Component:
                                     on_change=AddListingState.set_duration,
                                 ),
                             ),
-
                             # Cost total
                             rx.hstack(
                                 rx.text("Cost total:"),
@@ -396,7 +418,6 @@ def add_listing() -> rx.Component:
                                 justify="center",
                                 mt="4",
                             ),
-
                             # Buton publicare
                             rx.button(
                                 "Publică anunțul",
@@ -407,7 +428,6 @@ def add_listing() -> rx.Component:
                                 mt="6",
                                 is_loading=AddListingState.is_loading,
                             ),
-
                             width="100%",
                             spacing="4",
                             align_items="start",
@@ -415,18 +435,15 @@ def add_listing() -> rx.Component:
                         on_submit=AddListingState.submit_listing,
                         width="65%",
                     ),
-
                     # Panou credite
                     rx.box(
                         credits_panel(),
                         width="35%",
                     ),
-
                     align_items="start",
                     spacing="6",
                     width="100%",
                 ),
-
                 max_width="1200px",
                 width="100%",
                 spacing="6",
@@ -435,8 +452,6 @@ def add_listing() -> rx.Component:
             mx="auto",
             px="4",
         ),
-
         footer(),
-
         on_mount=AddListingState.fetch_categories,
     )

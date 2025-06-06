@@ -1,10 +1,13 @@
-import reflex as rx
 import httpx
-from frontend_reflex.state import AuthState
+import reflex as rx
+
 from frontend_reflex.components.navbar import navbar
+from frontend_reflex.state import AuthState
+
 
 class RegisterFormState(rx.State):
     """Register form state."""
+
     username: str = ""
     email: str = ""
     password: str = ""
@@ -12,35 +15,35 @@ class RegisterFormState(rx.State):
     loading: bool = False
     error: str = ""
     success: bool = False
-    
+
     def validate(self) -> bool:
         """Validate form inputs."""
         if not self.username:
             self.error = "Username is required"
             return False
-        
+
         if not self.email:
             self.error = "Email is required"
             return False
-        
+
         if not self.password:
             self.error = "Password is required"
             return False
-        
+
         if self.password != self.confirm_password:
             self.error = "Passwords do not match"
             return False
-        
+
         return True
-    
+
     async def handle_submit(self):
         """Handle form submission."""
         if not self.validate():
             return
-        
+
         self.loading = True
         self.error = ""
-        
+
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -49,9 +52,9 @@ class RegisterFormState(rx.State):
                         "username": self.username,
                         "email": self.email,
                         "password": self.password,
-                    }
+                    },
                 )
-                
+
                 if response.status_code == 201:
                     self.success = True
                     # Clear form

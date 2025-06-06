@@ -1,50 +1,58 @@
 """Pagina de detalii anunț pentru aplicația de marketplace Piata.ro."""
 
-import reflex as rx
-import httpx
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 
-from frontend_reflex.components.navbar import navbar
+import httpx
+import reflex as rx
+
 from frontend_reflex.components.footer import footer
 from frontend_reflex.components.listing_card import listing_card
+from frontend_reflex.components.navbar import navbar
 from frontend_reflex.state import State
 
 
 class ListingState(State):
     """Starea pentru pagina de detalii anunț."""
-    
+
     listing: Optional[Dict[str, Any]] = None
     similar_listings: List[Dict[str, Any]] = []
     loading: bool = False
     error: Optional[str] = None
-    
+
     async def fetch_listing(self, listing_id: int):
         """Preia detaliile anunțului de la API."""
         self.loading = True
         self.error = None
-        
+
         try:
             # Preia anunțul
             async with httpx.AsyncClient() as client:
-                response = await client.get(f"http://localhost:8000/api/listings/{listing_id}/")
+                response = await client.get(
+                    f"http://localhost:8000/api/listings/{listing_id}/"
+                )
                 if response.status_code == 200:
                     self.listing = response.json()
-                    
+
                     # Preia anunțuri similare din aceeași categorie
                     category_id = self.listing.get("category", {}).get("id")
                     if category_id:
-                        response = await client.get(f"http://localhost:8000/api/categories/{category_id}/listings/")
+                        response = await client.get(
+                            f"http://localhost:8000/api/categories/{category_id}/listings/"
+                        )
                         if response.status_code == 200:
                             # Exclude anunțul curent și limitează la 3 anunțuri
                             self.similar_listings = [
-                                listing for listing in response.json()
+                                listing
+                                for listing in response.json()
                                 if listing["id"] != listing_id
                             ][:3]
                 else:
-                    self.error = f"Eroare la preluarea anunțului: {response.status_code}"
+                    self.error = (
+                        f"Eroare la preluarea anunțului: {response.status_code}"
+                    )
         except Exception as e:
             self.error = f"Eroare la preluarea datelor: {str(e)}"
-        
+
         self.loading = False
 
 
@@ -52,7 +60,6 @@ def listing() -> rx.Component:
     """Componenta paginii de detalii anunț."""
     return rx.box(
         navbar(),
-        
         rx.cond(
             ListingState.loading,
             rx.center(
@@ -95,7 +102,9 @@ def listing() -> rx.Component:
                             ),
                             rx.box(
                                 rx.vstack(
-                                    rx.heading(ListingState.listing["title"], size="lg"),
+                                    rx.heading(
+                                        ListingState.listing["title"], size="lg"
+                                    ),
                                     rx.text(
                                         f"{ListingState.listing['price']:,.2f} {ListingState.listing['currency']}",
                                         font_weight="bold",
@@ -112,8 +121,17 @@ def listing() -> rx.Component:
                                         rx.hstack(
                                             rx.avatar(size="md"),
                                             rx.vstack(
-                                                rx.text(ListingState.listing["user"]["username"], font_weight="bold"),
-                                                rx.text("Membru din 2025", color="gray.500", font_size="sm"),
+                                                rx.text(
+                                                    ListingState.listing["user"][
+                                                        "username"
+                                                    ],
+                                                    font_weight="bold",
+                                                ),
+                                                rx.text(
+                                                    "Membru din 2025",
+                                                    color="gray.500",
+                                                    font_size="sm",
+                                                ),
                                                 align_items="start",
                                             ),
                                             align="center",
@@ -150,7 +168,6 @@ def listing() -> rx.Component:
                             spacing="8",
                             width="100%",
                         ),
-                        
                         # Descriere anunț
                         rx.box(
                             rx.vstack(
@@ -165,7 +182,6 @@ def listing() -> rx.Component:
                             ),
                             mt="8",
                         ),
-                        
                         # Detalii suplimentare
                         rx.box(
                             rx.vstack(
@@ -174,13 +190,19 @@ def listing() -> rx.Component:
                                     rx.grid_item(
                                         rx.hstack(
                                             rx.text("Categorie:", font_weight="bold"),
-                                            rx.text(ListingState.listing["category"]["name"]),
+                                            rx.text(
+                                                ListingState.listing["category"]["name"]
+                                            ),
                                         ),
                                     ),
                                     rx.grid_item(
                                         rx.hstack(
                                             rx.text("Publicat la:", font_weight="bold"),
-                                            rx.text(ListingState.listing["created_at"].split("T")[0]),
+                                            rx.text(
+                                                ListingState.listing[
+                                                    "created_at"
+                                                ].split("T")[0]
+                                            ),
                                         ),
                                     ),
                                     rx.grid_item(
@@ -208,7 +230,6 @@ def listing() -> rx.Component:
                             ),
                             mt="8",
                         ),
-                        
                         # Anunțuri similare
                         rx.cond(
                             rx.len_(ListingState.similar_listings) > 0,
@@ -224,7 +245,11 @@ def listing() -> rx.Component:
                                                 price=listing["price"],
                                                 currency=listing["currency"],
                                                 location=listing["location"],
-                                                image=listing["images"][0] if listing["images"] else None,
+                                                image=(
+                                                    listing["images"][0]
+                                                    if listing["images"]
+                                                    else None
+                                                ),
                                             ),
                                         ),
                                         spacing="4",
@@ -236,7 +261,6 @@ def listing() -> rx.Component:
                                 mt="12",
                             ),
                         ),
-                        
                         max_width="1200px",
                         mx="auto",
                         px="4",
@@ -245,8 +269,8 @@ def listing() -> rx.Component:
                 ),
             ),
         ),
-        
         footer(),
-        
-        on_mount=lambda: ListingState.fetch_listing(rx.State.router.page.params.get("id", 1)),
+        on_mount=lambda: ListingState.fetch_listing(
+            rx.State.router.page.params.get("id", 1)
+        ),
     )

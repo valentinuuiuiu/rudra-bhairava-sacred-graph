@@ -1,6 +1,7 @@
 """Componenta de navigare pentru Piata.ro."""
 
 import reflex as rx
+
 from frontend_reflex.state import State
 
 
@@ -31,7 +32,9 @@ def navbar() -> rx.Component:
                         rx.menu_item("Servicii", as_="a", href="/category/5"),
                         rx.menu_item("Modă", as_="a", href="/category/6"),
                         rx.menu_item("Casă și grădină", as_="a", href="/category/7"),
-                        rx.menu_item("Sport și timp liber", as_="a", href="/category/8"),
+                        rx.menu_item(
+                            "Sport și timp liber", as_="a", href="/category/8"
+                        ),
                     ),
                 ),
                 rx.link("Anunțuri", href="/listings"),
@@ -53,7 +56,9 @@ def navbar() -> rx.Component:
                         ),
                         rx.menu_list(
                             rx.menu_item("Profilul meu", as_="a", href="/profile"),
-                            rx.menu_item("Anunțurile mele", as_="a", href="/my-listings"),
+                            rx.menu_item(
+                                "Anunțurile mele", as_="a", href="/my-listings"
+                            ),
                             rx.menu_item("Favorite", as_="a", href="/favorites"),
                             rx.menu_item("Mesaje", as_="a", href="/messages"),
                             rx.menu_item(
@@ -63,7 +68,7 @@ def navbar() -> rx.Component:
                                     spacing="1",
                                 ),
                                 as_="a",
-                                href="/credits"
+                                href="/credits",
                             ),
                             rx.menu_divider(),
                             rx.menu_item("Deconectare", on_click=State.logout),
@@ -83,7 +88,9 @@ def navbar() -> rx.Component:
                 ),
                 rx.hstack(
                     rx.button("Autentificare", variant="ghost", as_="a", href="/login"),
-                    rx.button("Înregistrare", color_scheme="blue", as_="a", href="/register"),
+                    rx.button(
+                        "Înregistrare", color_scheme="blue", as_="a", href="/register"
+                    ),
                     spacing="2",
                 ),
             ),

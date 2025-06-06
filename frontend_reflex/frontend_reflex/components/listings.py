@@ -1,5 +1,7 @@
 import reflex as rx
+
 from frontend_reflex.state import AppState
+
 
 def listing_card(listing) -> rx.Component:
     """A card component for a listing."""
@@ -7,7 +9,11 @@ def listing_card(listing) -> rx.Component:
         rx.box(
             rx.vstack(
                 rx.image(
-                    src=listing["images"][0] if listing["images"] and len(listing["images"]) > 0 else "https://via.placeholder.com/300x200?text=No+Image",
+                    src=(
+                        listing["images"][0]
+                        if listing["images"] and len(listing["images"]) > 0
+                        else "https://via.placeholder.com/300x200?text=No+Image"
+                    ),
                     height="200px",
                     width="100%",
                     object_fit="cover",
@@ -15,7 +21,11 @@ def listing_card(listing) -> rx.Component:
                 rx.vstack(
                     rx.heading(listing["title"], size="md"),
                     rx.text(
-                        f"{listing['price']} {listing['currency']}" if listing.get('price') else "Price on request",
+                        (
+                            f"{listing['price']} {listing['currency']}"
+                            if listing.get("price")
+                            else "Price on request"
+                        ),
                         color="blue.500",
                         font_weight="bold",
                     ),
@@ -43,6 +53,7 @@ def listing_card(listing) -> rx.Component:
         text_decoration="none",
         color="inherit",
     )
+
 
 def listings_grid() -> rx.Component:
     """The listings grid component."""

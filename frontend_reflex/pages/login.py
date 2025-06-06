@@ -2,28 +2,28 @@
 
 import reflex as rx
 
-from frontend_reflex.components.navbar import navbar
 from frontend_reflex.components.footer import footer
+from frontend_reflex.components.navbar import navbar
 from frontend_reflex.state import State
 
 
 class LoginState(State):
     """Starea pentru pagina de autentificare."""
-    
+
     username: str = ""
     password: str = ""
     show_password: bool = False
-    
+
     def toggle_show_password(self):
         """Comută vizibilitatea parolei."""
         self.show_password = not self.show_password
-    
+
     def handle_login(self):
         """Gestionează procesul de autentificare."""
         if not self.username or not self.password:
             self.error = "Vă rugăm să completați toate câmpurile."
             return
-        
+
         return self.login(self.username, self.password)
 
 
@@ -31,7 +31,6 @@ def login() -> rx.Component:
     """Componenta paginii de autentificare."""
     return rx.box(
         navbar(),
-        
         rx.center(
             rx.card(
                 rx.card_header(
@@ -98,7 +97,9 @@ def login() -> rx.Component:
                         rx.divider(),
                         rx.text(
                             "Nu ai cont? ",
-                            rx.link("Înregistrează-te", href="/register", color="blue.500"),
+                            rx.link(
+                                "Înregistrează-te", href="/register", color="blue.500"
+                            ),
                         ),
                         spacing="4",
                         align_items="start",
@@ -109,6 +110,5 @@ def login() -> rx.Component:
             ),
             py="20",
         ),
-        
         footer(),
     )
