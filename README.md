@@ -131,10 +131,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. **Install Node.js dependencies (for Tailwind CSS):**
-```bash
-npm install
-```
 
 4. **Set up the database:**
 ```bash

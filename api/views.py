@@ -4,7 +4,7 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Category, Favorite, Listing, Message, UserProfile
+from marketplace.models import Category, Favorite, Listing, Message, UserProfile
 from .serializers import (
     CategorySerializer,
     FavoriteCreateSerializer,

@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from .models import Category, Favorite, Listing, Message, UserProfile
+from marketplace.models import Category, Favorite, Listing, Message, UserProfile
 
 
 class UserSerializer(serializers.ModelSerializer):
