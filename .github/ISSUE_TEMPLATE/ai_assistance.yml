@@ -85,7 +85,7 @@ body:
       label: 📁 Relevant Files
       description: List the files that are relevant to this task
       placeholder: |
-        - frontend_reflex/pages/index.py
+        - marketplace/templates/marketplace/index.html
         - api/models.py
         - marketplace/views.py
         - etc.

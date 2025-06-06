@@ -17,9 +17,10 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from piata_ro.views import process_mcp_query, test_endpoint
+from piata_ro.views import process_mcp_query, test_endpoint, home
 
 urlpatterns = [
+    path('', home, name='home'),  # Root URL pattern
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
     path('mcp/process/', process_mcp_query, name='mcp_processor'),

@@ -28,7 +28,7 @@ Please check the relevant option(s):
 **Frontend Changes:**
 - [ ] UI/UX improvements
 - [ ] New page/component added
-- [ ] Reflex state management updates
+- [ ] Django template updates
 - [ ] Responsive design adjustments
 
 **Backend Changes:**

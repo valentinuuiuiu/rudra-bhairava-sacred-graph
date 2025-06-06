@@ -2,8 +2,31 @@
 
 **Motto**: Aknolwedging The Limitations of The AI is aknolwedging THe Limitations of Our OLD Patherns Stupid Mind,Dare to Dream and The AI will make it Real
 
-
 **Piața RO** is a modern, full-featured Romanian marketplace platform inspired by popular sites like **Publi24.ro** and **OLX.ro**. Built with cutting-edge technologies, it provides a seamless experience for buying and selling items across Romania.
+
+## 🎯 **NEW: AI-Powered Advertising Helper Agent**
+
+**Piața RO** now features an advanced **MCP (Model Context Protocol) Advertising Helper Agent** specifically designed for Romanian marketplace optimization. This AI assistant provides:
+
+### 🚀 **Smart Advertising Tools**
+- 📝 **Title Optimization** - AI-powered title suggestions with SEO and local keywords
+- 📋 **Description Templates** - Professional, category-specific listing descriptions
+- 💰 **Dynamic Pricing Strategy** - Market-based pricing recommendations with competitor analysis
+- 📱 **Social Media Content** - Auto-generated content for Facebook, Instagram, WhatsApp
+- 📊 **Market Analysis** - Competitor pricing and trend analysis for informed decisions
+- ⏰ **Optimal Posting Schedule** - Best times to post based on Romanian user behavior
+
+### 🇷🇴 **Romanian Market Specialization**
+- 🏙️ **Local Market Intelligence** - City-specific pricing adjustments (București, Cluj-Napoca, etc.)
+- 🗣️ **Romanian Language Optimization** - Native language patterns and cultural insights
+- 📅 **Cultural Timing** - Posting schedules that respect Romanian business and social patterns
+- 🎯 **Target Audience Segmentation** - Tailored messaging for different demographic groups
+
+### 📈 **Performance Analytics**
+- 📊 **Real-time Analytics** - Track engagement, conversion rates, and ROI
+- 🔄 **A/B Testing Templates** - Test different approaches automatically
+- 🎯 **Conversion Optimization** - Recommendations to improve listing performance
+- 📱 **Multi-platform Insights** - Track performance across social media platforms
 
 ## 🌟 Key Features
 
@@ -31,42 +54,52 @@
 ## 🚀 Tech Stack
 
 ### **Frontend**
-- **Reflex** - Modern Python-based web framework for reactive UIs
-- **HTML/CSS/JavaScript** - Custom responsive components
+- **Django Templates** - Server-side rendered HTML with Jinja2 templating
+- **HTML/CSS/JavaScript** - Custom responsive components with Tailwind CSS
 - **Modern UI Components** - Clean, professional design system
 
 ### **Backend**
 - **Python 3.8+** - Core application logic
-- **Django/FastAPI** - RESTful API development
-- **SQL Database** - Robust data storage with migrations
-- **Authentication System** - Secure user management
+- **Django 4.2+** - Full-stack web framework with ORM
+- **Django REST Framework** - RESTful API development
+- **SQLite/PostgreSQL** - Robust data storage with migrations
+- **Authentication System** - Django's built-in secure user management
 
 ### **Infrastructure**
 - **Docker** - Containerized deployment
-- **Node.js** - Build tools and package management
-- **Migration System** - Database version control
-- **RESTful APIs** - Clean API architecture
+- **Node.js** - Build tools and package management (Tailwind CSS)
+- **Migration System** - Django's database version control
+- **RESTful APIs** - Clean API architecture with Django REST Framework
 
 ## 📁 Project Architecture
 
 ```
 piata-ro-project/
-├── 🎨 frontend_reflex/           # Main Reflex frontend application
-│   ├── components/               # Reusable UI components
-│   ├── pages/                   # Application pages
-│   └── state.py                 # State management
+├── 🎨 marketplace/              # Main Django marketplace application
+│   ├── templates/               # HTML templates
+│   ├── static/                  # CSS, JS, images
+│   ├── models.py                # Database models
+│   ├── views.py                 # View logic
+│   ├── urls.py                  # URL routing
+│   └── admin.py                 # Django admin configuration
 ├── 🔧 api/                      # REST API endpoints
 │   ├── models.py                # Database models
 │   ├── serializers.py           # Data serialization
 │   ├── views.py                 # API views
 │   └── urls.py                  # URL routing
-├── 🏪 marketplace/              # Core marketplace logic
-│   ├── models.py                # Marketplace models
-│   ├── views.py                 # Business logic
-│   └── templates/               # HTML templates
+├── �️ piata_ro/                 # Django project configuration
+│   ├── settings.py              # Django settings
+│   ├── urls.py                  # Main URL configuration
+│   └── wsgi.py                  # WSGI configuration
+├── 🤖 awesome-mcp-servers/      # AI Agents & MCP Servers
+│   ├── advertising-agent.py     # Marketing optimization agent
+│   ├── django_sql_agent.py      # Database operations agent
+│   ├── stock_agent.py           # Inventory management agent
+│   ├── test-advertising-agent.py # Testing agent
+│   └── start-agents.sh          # Agent launcher script
 ├── 📊 migrations/               # Database migrations
 ├── 📦 requirements.txt          # Python dependencies
-└── 🔧 package.json             # Node.js dependencies
+└── 🔧 package.json             # Node.js scripts & project info
 ```
 
 ## 🚀 Quick Start
@@ -98,78 +131,110 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-3. **Install Node.js dependencies:**
+3. **Install Node.js dependencies (for Tailwind CSS):**
 ```bash
 npm install
 ```
 
 4. **Set up the database:**
 ```bash
-# Create database schema
-sqlite3 database.db < create-schema.sql
+# Run Django migrations
+python manage.py migrate
 
-# Add sample data (optional)
-sqlite3 database.db < sample-data.sql
+# Create superuser (optional)
+python manage.py createsuperuser
 
-# Run migrations
-node run-migrations.js
+# Load sample data (optional)
+python manage.py loaddata sample-data.json
 ```
 
-5. **Configure environment:**
+5. **Build CSS:**
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your configuration
-nano .env
-```
-pip install -r requirements.txt
+# Build Tailwind CSS
+npm run build:css
 ```
 
-3. Set up the database:
+6. **Start the development server:**
 ```bash
-# Run migrations
-node run-migrations.js
+# Start Django development server
+python manage.py runserver
+
+# Or use npm script
+npm run dev
 ```
 
-4. Start the development server:
+## 🤖 AI Agents & MCP Servers
+
+Piața RO includes a collection of specialized AI agents built with the **Model Context Protocol (MCP)** for various marketplace operations:
+
+### 📢 Advertising Agent
+- **Purpose**: Marketing optimization and listing enhancement
+- **Features**: Title optimization, description generation, pricing strategy, social media content
+- **Start**: `npm run agents advertising` or `cd awesome-mcp-servers && ./start-agents.sh advertising`
+
+### 🗄️ Django SQL Agent  
+- **Purpose**: Database operations and SQL management
+- **Features**: CRUD operations, user management, search functionality, custom queries
+- **Start**: `npm run agents sql` or `cd awesome-mcp-servers && ./start-agents.sh sql`
+
+### 📊 Stock Agent
+- **Purpose**: Inventory and product management
+- **Features**: Stock monitoring, analytics, alerts, performance tracking
+- **Start**: `npm run agents stock` or `cd awesome-mcp-servers && ./start-agents.sh stock`
+
+### 🚀 Quick Agent Commands
 ```bash
-# Option 1: Using the development script
-./run-dev.sh
+# Start all agents
+npm run agents:all
 
-# Option 2: Using the server script
-./run-server.sh
+# Start specific agent
+npm run agents advertising
+npm run agents sql
+npm run agents stock
 
-# Option 3: Using Docker
-docker-compose up
+# Show agent help
+npm run agents:help
 ```
+
+For detailed agent documentation, see [`awesome-mcp-servers/README.md`](awesome-mcp-servers/README.md)
 
 ## Development
 
 ### Running in Development Mode
 
 ```bash
-./run-dev.sh
+# Start Django development server
+python manage.py runserver
+
+# Or use npm script
+npm run dev
 ```
 
-### Running the Server
+### Building for Production
 
 ```bash
-./run-server.sh
+# Collect static files
+python manage.py collectstatic
+
+# Build CSS
+npm run build:css
 ```
 
 ### Database Operations
 
-- Create schema: Use `create-schema.sql`
-- Sample data: Use `sample-data.sql`
-- Migrations: Run `node run-migrations.js`
+- Run migrations: `python manage.py migrate`
+- Create migrations: `python manage.py makemigrations`
+- Create superuser: `python manage.py createsuperuser`
+- Load fixtures: `python manage.py loaddata sample-data.json`
 
 ## API Testing
 
-You can test the API endpoints using the provided `test-api.html` file or by running the test database script:
+You can test the API endpoints using Django's built-in admin interface at `/admin/` or by using tools like Postman or curl:
 
 ```bash
-node test-db.js
+# Test API endpoints
+curl http://localhost:8000/api/listings/
+curl http://localhost:8000/api/categories/
 ```
 
 ## Docker Support
@@ -178,6 +243,59 @@ The project includes Docker configuration for easy deployment:
 
 ```bash
 docker-compose up -d
+```
+
+## 🤖 AI Development Companions
+
+### For Sourcery AI & OpenHands Agent
+
+**Project Status**: Reflex framework has been completely removed. The project is now a pure Django application.
+
+#### 🎯 Current Architecture
+- **Framework**: Django 4.2+ (Pure Python web framework)
+- **Frontend**: Django Templates + Tailwind CSS
+- **Backend**: Django + Django REST Framework
+- **Database**: SQLite (can be upgraded to PostgreSQL)
+- **AI Agent**: MCP-based Advertising Helper (FastMCP)
+
+#### 🔄 Recent Changes (Commit: Remove Reflex Dependencies)
+- ❌ Removed `frontend_reflex/` directory and all Reflex components
+- ❌ Removed `rxconfig.py` and `reflex.log`
+- ❌ Removed Reflex from `requirements.txt`
+- ✅ Updated `package.json` scripts to use Django commands
+- ✅ Updated README.md to reflect Django-only architecture
+- ✅ Maintained MCP Advertising Helper Agent (FastMCP)
+
+#### 🛠️ Development Focus Areas
+1. **Django Templates Enhancement** - Improve the existing marketplace templates
+2. **API Optimization** - Enhance Django REST Framework endpoints
+3. **Frontend Polish** - Better Tailwind CSS integration and responsive design
+4. **MCP Agent Integration** - Further develop the advertising helper features
+5. **Database Optimization** - Improve models and add proper indexing
+
+#### 🚀 Next Steps for AI Companions
+1. Review and enhance existing Django views in `marketplace/views.py`
+2. Improve the marketplace templates in `marketplace/templates/`
+3. Optimize the API endpoints in `api/views.py`
+4. Add comprehensive tests for Django components
+5. Implement better error handling and logging
+
+#### 📋 Development Commands
+```bash
+# Start development server
+python manage.py runserver
+
+# Run migrations
+python manage.py migrate
+
+# Create superuser
+python manage.py createsuperuser
+
+# Build CSS
+npm run build:css
+
+# Run tests
+python manage.py test
 ```
 
 ## Contributing

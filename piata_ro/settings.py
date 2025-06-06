@@ -93,6 +93,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'piata_ro.wsgi.application'
+ASGI_APPLICATION = 'piata_ro.asgi.application'
 
 
 # Database

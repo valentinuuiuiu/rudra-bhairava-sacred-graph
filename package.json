@@ -3,21 +3,17 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "reflex run",
-    "dev": "reflex run --env dev",
-    "build": "reflex export || echo \"Reflex build completed with warnings\"",
-    "test": "echo \"No frontend tests configured yet\" && exit 0",
+    "start": "python manage.py runserver",
+    "dev": "python manage.py runserver --settings=piata_ro.settings",
+    "build": "python manage.py collectstatic --noinput",
+    "test": "python manage.py test",
     "migrate": "python manage.py migrate",
     "makemigrations": "python manage.py makemigrations",
     "createsuperuser": "python manage.py createsuperuser",
     "collectstatic": "python manage.py collectstatic --noinput",
-    "build:css": "postcss assets/css/tailwind.css -o marketplace/static/marketplace/css/tailwind.css",
-    "watch:css": "postcss assets/css/tailwind.css -o marketplace/static/marketplace/css/tailwind.css --watch"
+    "agents": "cd awesome-mcp-servers && ./start-agents.sh",
+    "agents:all": "cd awesome-mcp-servers && ./start-agents.sh all",
+    "agents:help": "cd awesome-mcp-servers && ./start-agents.sh help"
   },
-  "devDependencies": {
-    "autoprefixer": "^10.4.21",
-    "postcss": "^8.5.4",
-    "postcss-cli": "^11.0.1",
-    "tailwindcss": "^4.1.8"
-  }
+  "devDependencies": {}
 }
