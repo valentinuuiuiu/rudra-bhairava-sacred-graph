@@ -1,0 +1,8 @@
+nohup: ignoring input
+──────────────────────────── Initializing piata_ro ─────────────────────────────
+Warning: Your version (0.7.11) of reflex is out of date. Upgrade to 0.7.14 with 
+'pip install reflex --upgrade'
+[07:37:10] Initializing the web directory.                        console.py:166
+Info: Failed to connect to https://registry.npmmirror.com.
+Success: Initialized piata_ro.
+Backend port: 53983 is already in use by PID: 5214.

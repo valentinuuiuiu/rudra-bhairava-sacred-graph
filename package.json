@@ -10,6 +10,14 @@
     "migrate": "python manage.py migrate",
     "makemigrations": "python manage.py makemigrations",
     "createsuperuser": "python manage.py createsuperuser",
-    "collectstatic": "python manage.py collectstatic --noinput"
+    "collectstatic": "python manage.py collectstatic --noinput",
+    "build:css": "postcss assets/css/tailwind.css -o marketplace/static/marketplace/css/tailwind.css",
+    "watch:css": "postcss assets/css/tailwind.css -o marketplace/static/marketplace/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.4",
+    "postcss-cli": "^11.0.1",
+    "tailwindcss": "^4.1.8"
   }
 }

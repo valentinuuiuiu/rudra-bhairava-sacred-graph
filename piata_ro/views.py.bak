@@ -1,0 +1,28 @@
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from praisonai import PraisonAI
+import os
+
+@csrf_exempt
+def process_mcp_query(request):
+    """Process MCP queries with PraisonAI using auto-configured GPT-4o-mini"""
+    try:
+        query = request.POST.get("query", "")
+        from django.conf import settings
+        praison = PraisonAI(
+            auto=settings.PRAISONAI_CONFIG['auto'],
+            framework=settings.PRAISONAI_CONFIG['framework'],
+            llm_config=settings.PRAISONAI_CONFIG['llm']['config']
+            temperature=settings.PRAISONAI_CONFIG['temperature']
+        )
+        result = praison.process(f"Process this MCP query: {query}")
+        return JsonResponse({
+            "result": result,
+            "status": "success"
+        })
+    except Exception as e:
+        return JsonResponse({
+            "error": str(e),
+            "status": "error"
+        }, status=500)

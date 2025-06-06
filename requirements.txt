@@ -3,3 +3,7 @@ reflex==0.7.11
 httpx>=0.28.0
 python-dotenv==1.0.1
 pillow==10.2.0
+
+django>=4.2,<5
+djangorestframework>=3.14
+praisonai>=2.2.30
