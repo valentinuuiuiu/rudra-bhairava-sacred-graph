@@ -5,11 +5,17 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import Category, Favorite, Listing, Message, UserProfile
-from .serializers import (CategorySerializer, FavoriteCreateSerializer,
-                          FavoriteSerializer, ListingCreateSerializer,
-                          ListingSerializer, MessageCreateSerializer,
-                          MessageSerializer, UserProfileSerializer,
-                          UserSerializer)
+from .serializers import (
+    CategorySerializer,
+    FavoriteCreateSerializer,
+    FavoriteSerializer,
+    ListingCreateSerializer,
+    ListingSerializer,
+    MessageCreateSerializer,
+    MessageSerializer,
+    UserProfileSerializer,
+    UserSerializer,
+)
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
