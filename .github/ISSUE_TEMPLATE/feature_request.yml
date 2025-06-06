@@ -1,0 +1,199 @@
+name: ✨ Feature Request
+description: Suggest a new feature for the Romanian marketplace
+title: "[FEATURE] "
+labels: ["enhancement", "feature-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Feature Request
+        Thank you for suggesting a new feature! Please provide as much detail as possible to help us understand your idea.
+
+  - type: textarea
+    id: feature-summary
+    attributes:
+      label: 🎯 Feature Summary
+      description: A clear and concise description of the feature you'd like to see
+      placeholder: Briefly describe the feature you want
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-area
+    attributes:
+      label: 🏪 Marketplace Area
+      description: Which part of the marketplace would this feature affect?
+      options:
+        - Frontend - User Interface
+        - Backend - API/Server
+        - Database - Data Storage
+        - Authentication - Login/Register
+        - Search - Finding listings
+        - Listings - Creating/Editing posts
+        - Categories - Product organization
+        - User Profiles - Account management
+        - Payment/Credits - Transaction system
+        - Mobile - Responsive design
+        - Admin Panel - Management tools
+        - Analytics - Reporting/Statistics
+        - Integration - Third-party services
+        - Other - Please specify in description
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem-statement
+    attributes:
+      label: 🤔 Problem Statement
+      description: What problem does this feature solve?
+      placeholder: |
+        Describe the problem or pain point that this feature would address.
+        For example: "Currently, users cannot..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: 💡 Proposed Solution
+      description: How would you like this feature to work?
+      placeholder: |
+        Describe your ideal solution in detail:
+        - How would users interact with this feature?
+        - What would the UI look like?
+        - How should it behave?
+    validations:
+      required: true
+
+  - type: textarea
+    id: user-stories
+    attributes:
+      label: 👥 User Stories
+      description: Who would benefit from this feature and how?
+      placeholder: |
+        As a [type of user], I want [feature] so that [benefit].
+        
+        Examples:
+        - As a seller, I want to bulk upload listings so that I can save time
+        - As a buyer, I want to save searches so that I can get notifications for new items
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 🚀 Priority Level
+      description: How important is this feature?
+      options:
+        - 🔥 High - Critical for marketplace success
+        - 🟡 Medium - Would significantly improve user experience
+        - 🟢 Low - Nice to have enhancement
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternative Solutions
+      description: Have you considered any alternative approaches?
+      placeholder: Describe any alternative solutions or workarounds you've considered
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: 🎨 Mockups/Screenshots
+      description: Any visual examples or mockups of how this feature might look?
+      placeholder: Drag and drop images here or describe the visual design
+
+  - type: checkboxes
+    id: romanian-market
+    attributes:
+      label: 🇷🇴 Romanian Market Considerations
+      description: Romanian-specific aspects of this feature
+      options:
+        - label: Requires Romanian language support
+        - label: Needs to comply with Romanian regulations
+        - label: Should integrate with Romanian services (payment, shipping, etc.)
+        - label: Must consider Romanian user behavior/preferences
+        - label: Needs RON currency support
+        - label: Should support Romanian address formats
+
+  - type: textarea
+    id: technical-considerations
+    attributes:
+      label: 🔧 Technical Considerations
+      description: Any technical aspects to consider?
+      placeholder: |
+        - Performance implications
+        - Database schema changes needed
+        - API changes required
+        - Third-party integrations
+        - Security considerations
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: ✅ Acceptance Criteria
+      description: How do we know when this feature is complete?
+      placeholder: |
+        Define specific, measurable criteria for this feature:
+        - [ ] User can perform action X
+        - [ ] System responds within Y seconds
+        - [ ] Feature works on mobile devices
+        - [ ] Feature supports Romanian language
+
+  - type: dropdown
+    id: effort-estimate
+    attributes:
+      label: ⏱️ Estimated Effort
+      description: How complex do you think this feature would be to implement?
+      options:
+        - 🟢 Small - A few hours to a day
+        - 🟡 Medium - A few days to a week
+        - 🔴 Large - Multiple weeks
+        - 🟣 Epic - Requires breaking into smaller features
+        - 🤷 Unknown - Need technical analysis
+
+  - type: textarea
+    id: business-impact
+    attributes:
+      label: 📈 Expected Business Impact
+      description: How would this feature benefit the marketplace?
+      placeholder: |
+        - Increased user engagement
+        - Higher conversion rates
+        - Better user retention
+        - Competitive advantage
+        - Revenue opportunities
+
+  - type: checkboxes
+    id: inspiration
+    attributes:
+      label: 🌟 Inspiration
+      description: Is this feature inspired by other platforms?
+      options:
+        - label: Similar to Publi24.ro feature
+        - label: Similar to OLX.ro feature
+        - label: Inspired by international marketplace (eBay, Amazon, etc.)
+        - label: Completely original idea
+        - label: Requested by users/community
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: 📝 Additional Context
+      description: Any other information about this feature request?
+      placeholder: Links, references, user feedback, market research, etc.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: ✅ Checklist
+      description: Please confirm you have done the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have clearly described the problem this feature solves
+          required: true
+        - label: I have considered the Romanian market context
+          required: true
