@@ -1,82 +1,8 @@
-<!DOCTYPE html>
-<html lang="ro">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Piata.ro - Anunțuri gratuite România</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Custom Tailwind Configuration -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#0056b3',
-                        secondary: '#6c757d',
-                        accent: '#28a745',
-                        danger: '#dc3545',
-                        warning: '#ffc107',
-                        info: '#17a2b8',
-                    },
-                    fontFamily: {
-                        'sans': ['Inter', 'system-ui', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Alpine.js for interactivity -->
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-</head>
-<body class="bg-gray-50 font-sans">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-md sticky top-0 z-50">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-4">
-                    <a href="/" class="text-2xl font-bold text-primary">
-                        <i class="fas fa-store mr-2"></i>Piata.ro
-                    </a>
-                
-                <div class="hidden md:flex items-center space-x-6">
-                    <a href="/api/listings/" class="text-gray-700 hover:text-primary transition duration-300">
-                        <i class="fas fa-list mr-1"></i>Toate anunțurile
-                    </a>
-                    <a href="/api/categories/" class="text-gray-700 hover:text-primary transition duration-300">
-                        <i class="fas fa-th-large mr-1"></i>Categorii
-                    </a>
-                    <a href="#" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
-                        <i class="fas fa-plus mr-1"></i>Adaugă anunț
-                    </a>
-                </div>
-                
-                <!-- Mobile menu button -->
-                <button class="md:hidden text-gray-700" onclick="toggleMobileMenu()">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- Mobile menu -->
-            <div id="mobileMenu" class="md:hidden hidden pb-4">
-                <div class="flex flex-col space-y-2">
-                    <a href="/api/listings/" class="text-gray-700 hover:text-primary py-2">Toate anunțurile</a>
-                    <a href="/api/categories/" class="text-gray-700 hover:text-primary py-2">Categorii</a>
-                    <a href="#" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-center">Adaugă anunț</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+{% extends 'marketplace/base.html' %}
 
+{% block title %}Piata.ro - Anunțuri gratuite România{% endblock %}
+
+{% block content %}
     <!-- Hero Section -->
     <section class="bg-gradient-to-br from-primary to-blue-600 text-white py-16">
         <div class="container mx-auto px-4 text-center">
@@ -90,11 +16,11 @@
             <!-- Quick Stats -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
                 <div class="text-center">
-                    <div class="text-3xl md:text-4xl font-bold mb-2" id="totalListings">0</div>
+                    <div id="totalListingsStat" class="text-3xl md:text-4xl font-bold mb-2">0</div>
                     <div class="text-lg opacity-80">Anunțuri active</div>
                 </div>
                 <div class="text-center">
-                    <div class="text-3xl md:text-4xl font-bold mb-2" id="totalCategories">0</div>
+                    <div id="totalCategoriesStat" class="text-3xl md:text-4xl font-bold mb-2">0</div>
                     <div class="text-lg opacity-80">Categorii</div>
                 </div>
                 <div class="text-center">
@@ -109,7 +35,7 @@
     <section class="relative -mt-8 mb-12">
         <div class="container mx-auto px-4">
             <div class="bg-white rounded-2xl shadow-xl p-6 md:p-8">
-                <form class="grid grid-cols-1 md:grid-cols-4 gap-4" action="/api/listings/" method="GET">
+                <form id="homeSearchForm" class="grid grid-cols-1 md:grid-cols-4 gap-4" action="{% url 'marketplace:listings' %}" method="GET">
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Ce cauți?</label>
                         <input type="text" name="search" placeholder="Caută anunțuri..." 
@@ -119,7 +45,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                         <select name="category" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option value="">Toate categoriile</option>
-                            <!-- Categories will be loaded dynamically -->
+                            {# Categories will be populated by JavaScript #}
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -138,9 +64,8 @@
             <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">
                 Categorii populare
             </h2>
-            
             <div id="categoriesGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                <!-- Categories will be loaded dynamically -->
+                {# Categories will be loaded dynamically by JavaScript #}
             </div>
         </div>
     </section>
@@ -152,13 +77,12 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
                     <i class="fas fa-star text-yellow-500 mr-3"></i>Anunțuri promovate
                 </h2>
-                <a href="/api/listings/?is_featured=true" class="text-primary hover:text-blue-700 font-semibold">
+                <a href="{% url 'marketplace:listings' %}?is_featured=true" class="text-primary hover:text-blue-700 font-semibold">
                     Vezi toate <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
-            
             <div id="featuredListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Featured listings will be loaded dynamically -->
+                {# Featured listings will be loaded dynamically by JavaScript #}
             </div>
         </div>
     </section>
@@ -170,13 +94,12 @@
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-800">
                     <i class="fas fa-clock text-blue-500 mr-3"></i>Anunțuri recente
                 </h2>
-                <a href="/api/listings/" class="text-primary hover:text-blue-700 font-semibold">
+                <a href="{% url 'marketplace:listings' %}" class="text-primary hover:text-blue-700 font-semibold">
                     Vezi toate <i class="fas fa-arrow-right ml-1"></i>
                 </a>
             </div>
-            
             <div id="recentListings" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <!-- Recent listings will be loaded dynamically -->
+                {# Recent listings will be loaded dynamically by JavaScript #}
             </div>
         </div>
     </section>
@@ -190,177 +113,113 @@
             <p class="text-xl mb-8 opacity-90">
                 Adaugă un anunț gratuit și ajunge la mii de cumpărători potențiali
             </p>
-            <a href="#" class="inline-block bg-white text-accent px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition duration-300">
+            <a href="{% url 'marketplace:add_listing' %}" class="inline-block bg-white text-accent px-8 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition duration-300">
                 <i class="fas fa-plus mr-2"></i>Adaugă anunț gratuit
             </a>
         </div>
     </section>
+{% endblock %}
 
-    <div class="search-container">
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12">
-        <div class="container mx-auto px-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-                <div>
-                    <div class="text-2xl font-bold mb-4">
-                        <i class="fas fa-store mr-2"></i>Piata.ro
-                    </div>
-                    <p class="text-gray-300 mb-4">
-                        Piata.ro este platforma ideală pentru a cumpăra și vinde produse și servicii în România. Simplu, rapid și eficient.
-                    </p>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-gray-300 hover:text-white text-xl">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="text-gray-300 hover:text-white text-xl">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="text-gray-300 hover:text-white text-xl">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                    </div>
-                </div>
-                
-                <div>
-                    <h5 class="font-semibold mb-4">Categorii populare</h5>
-                    <ul class="space-y-2 text-gray-300">
-                        <li><a href="#" class="hover:text-white">Imobiliare</a></li>
-                        <li><a href="#" class="hover:text-white">Auto moto</a></li>
-                        <li><a href="#" class="hover:text-white">Electronice</a></li>
-                        <li><a href="#" class="hover:text-white">Servicii</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h5 class="font-semibold mb-4">Informații</h5>
-                    <ul class="space-y-2 text-gray-300">
-                        <li><a href="#" class="hover:text-white">Termeni și condiții</a></li>
-                        <li><a href="#" class="hover:text-white">Politica de confidențialitate</a></li>
-                        <li><a href="#" class="hover:text-white">Cum funcționează</a></li>
-                        <li><a href="#" class="hover:text-white">Contact</a></li>
-                    </ul>
-                </div>
-                
-                <div>
-                    <h5 class="font-semibold mb-4">Contact</h5>
-                    <div class="space-y-2 text-gray-300">
-                        <p><i class="fas fa-envelope mr-2"></i> contact@piata.ro</p>
-                        <p><i class="fas fa-phone mr-2"></i> +40 123 456 789</p>
-                        <p><i class="fas fa-map-marker-alt mr-2"></i> București, România</p>
-                    </div>
-                </div>
-            </div>
-            
-            <hr class="border-gray-700 my-8">
-            <div class="text-center text-gray-300">
-                <p>&copy; 2025 Piata.ro. Toate drepturile rezervate.</p>
-            </div>
-        </div>
-    </footer>
+{% block extra_scripts %}
+<script>
+    // API Base URL
+    const API_BASE_URL = '/api'; // Used by fetchAPI
 
-    <!-- Loading Spinner -->
-    <div id="loadingSpinner" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-6 rounded-lg">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-            <p class="mt-4 text-gray-700">Se încarcă...</p>
-        </div>
-    </div>
+    // Utility functions (formatPrice, formatDate, truncateText are used by populateListings)
+    // showLoading and hideLoading are defined in base.html and use the spinner from base.html
 
-    <script>
-        // API Base URL
-        const API_BASE_URL = '/api';
+    function formatPrice(price, currency = "RON") { // Added currency parameter
+        if (price === null || price === undefined) return "N/A";
+        return new Intl.NumberFormat('ro-RO', { style: 'currency', currency: currency }).format(price);
+    }
 
-        // Utility functions
-        function showLoading() {
-            document.getElementById('loadingSpinner').classList.remove('hidden');
+    function formatDate(dateString) {
+        if (!dateString) return "N/A";
+        const date = new Date(dateString);
+        return date.toLocaleDateString('ro-RO', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function truncateText(text, maxLength = 50) {
+        if (!text) return '';
+        return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+
+    // Category icons and colors mapping
+    const categoryIcons = {
+        'Imobiliare': 'fas fa-home',
+        'Auto moto': 'fas fa-car',
+        'Locuri de muncă': 'fas fa-briefcase',
+        'Matrimoniale': 'fas fa-heart',
+        'Servicii': 'fas fa-tools',
+        'Electronice': 'fas fa-laptop',
+        'Modă și accesorii': 'fas fa-tshirt',
+        'Animale': 'fas fa-paw',
+        'Casă și grădină': 'fas fa-home',
+        'Timp liber și sport': 'fas fa-futbol',
+        'Mamă și copil': 'fas fa-baby',
+        'Cazare turism': 'fas fa-suitcase-rolling',
+        'default': 'fas fa-tag'
+    };
+
+    const categoryColors = [
+        'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
+        'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500',
+        'bg-orange-500', 'bg-cyan-500', 'bg-lime-500', 'bg-emerald-500'
+    ];
+
+    // API Functions
+    async function fetchAPI(endpoint) {
+        try {
+            const response = await fetch(`${API_BASE_URL}${endpoint}`);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('API Error fetching ' + endpoint + ':', error);
+            // Optionally display a user-friendly error message on the page
+            return null;
         }
+    }
 
-        function hideLoading() {
-            document.getElementById('loadingSpinner').classList.add('hidden');
-        }
+    // Load Categories
+    async function loadCategories() {
+        const categories = await fetchAPI('/categories/');
+        if (!categories) return;
 
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobileMenu');
-            menu.classList.toggle('hidden');
-        }
+        // Update category count for stats
+        const totalCategoriesStatEl = document.getElementById('totalCategoriesStat');
+        if (totalCategoriesStatEl) animateCounter(totalCategoriesStatEl, categories.length);
 
-        function formatPrice(price) {
-            return new Intl.NumberFormat('ro-RO').format(price) + ' lei';
-        }
 
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            return date.toLocaleDateString('ro-RO', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-
-        function truncateText(text, maxLength = 50) {
-            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-        }
-
-        // Category icons mapping
-        const categoryIcons = {
-            'Imobiliare': 'fas fa-home',
-            'Auto moto': 'fas fa-car',
-            'Locuri de muncă': 'fas fa-briefcase',
-            'Matrimoniale': 'fas fa-heart',
-            'Servicii': 'fas fa-tools',
-            'Electronice': 'fas fa-laptop',
-            'Modă și accesorii': 'fas fa-tshirt',
-            'Animale': 'fas fa-paw',
-            'Casă și grădină': 'fas fa-home',
-            'Timp liber și sport': 'fas fa-futbol',
-            'Mamă și copil': 'fas fa-baby',
-            'Cazare turism': 'fas fa-suitcase-rolling',
-            'default': 'fas fa-tag'
-        };
-
-        const categoryColors = [
-            'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-            'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500',
-            'bg-orange-500', 'bg-cyan-500', 'bg-lime-500', 'bg-emerald-500'
-        ];
-
-        // API Functions
-        async function fetchAPI(endpoint) {
-            try {
-                const response = await fetch(`${API_BASE_URL}${endpoint}`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                return await response.json();
-            } catch (error) {
-                console.error('API Error:', error);
-                return null;
-            }
-        }
-
-        // Load Categories
-        async function loadCategories() {
-            const categories = await fetchAPI('/categories/');
-            if (!categories) return;
-
-            // Update category count
-            document.getElementById('totalCategories').textContent = categories.length;
-
-            // Populate search dropdown
-            const searchSelect = document.querySelector('select[name="category"]');
+        // Populate search dropdown
+        const searchSelect = document.querySelector('form#homeSearchForm select[name="category"]');
+        if (searchSelect) {
             categories.forEach(category => {
                 const option = document.createElement('option');
                 option.value = category.id;
                 option.textContent = category.name;
                 searchSelect.appendChild(option);
             });
+        }
 
-            // Populate categories grid
-            const categoriesGrid = document.getElementById('categoriesGrid');
-            categories.slice(0, 12).forEach((category, index) => {
-                const iconClass = categoryIcons[category.name] || categoryIcons.default;
+        // Populate categories grid
+        const categoriesGrid = document.getElementById('categoriesGrid');
+        if (categoriesGrid) {
+            categoriesGrid.innerHTML = ''; // Clear existing
+            const parentCategories = categories.filter(c => !c.parent).slice(0, 12);
+            parentCategories.forEach((category, index) => {
+                const iconClass = category.icon || categoryIcons[category.name] || categoryIcons.default;
                 const colorClass = categoryColors[index % categoryColors.length];
                 
+                // Use Django URL for category detail, but construct it carefully for JS
+                // For simplicity, we'll use the direct slug-based URL structure
+                const categoryDetailUrl = `/categorii/${category.slug}/`;
+
                 categoriesGrid.innerHTML += `
-                    <div class="group cursor-pointer" onclick="filterByCategory(${category.id})">
+                    <a href="${categoryDetailUrl}" class="group">
                         <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition duration-300 text-center group-hover:transform group-hover:scale-105">
                             <div class="w-16 h-16 ${colorClass} rounded-full mx-auto mb-4 flex items-center justify-center">
                                 <i class="${iconClass} text-white text-2xl"></i>
@@ -368,140 +227,147 @@
                             <h3 class="font-semibold text-gray-800 group-hover:text-primary">
                                 ${category.name}
                             </h3>
+                            <p class="text-sm text-gray-500 mt-1">${category.listing_count || 0} anunțuri</p>
                         </div>
-                    </div>
+                    </a>
                 `;
             });
         }
+    }
 
-        // Load Listings
-        async function loadListings() {
-            const listings = await fetchAPI('/listings/');
-            if (!listings) return;
+    // Load Listings
+    async function loadListings() {
+        const listings = await fetchAPI('/listings/?limit=12'); // Fetch a limited number for homepage
+        if (!listings || !listings.results) return; // Assuming API returns {count, next, previous, results}
 
-            // Update total listings count
-            document.getElementById('totalListings').textContent = listings.length;
+        const allListings = listings.results;
 
-            // Filter featured and recent listings
-            const featuredListings = listings.filter(listing => listing.is_featured).slice(0, 4);
-            const recentListings = listings.slice(0, 8);
-
-            // Populate featured listings
-            populateListings('featuredListings', featuredListings);
-            
-            // Populate recent listings
-            populateListings('recentListings', recentListings);
+        // Update total listings count for stats
+        const totalListingsStatEl = document.getElementById('totalListingsStat');
+        if (totalListingsStatEl && listings.count !== undefined) {
+             animateCounter(totalListingsStatEl, listings.count);
         }
 
-        function populateListings(containerId, listings) {
-            const container = document.getElementById(containerId);
-            
-            if (listings.length === 0) {
-                container.innerHTML = `
-                    <div class="col-span-full text-center py-12">
-                        <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-500 text-lg">Nu există anunțuri momentan.</p>
-                    </div>
-                `;
-                return;
-            }
 
-            container.innerHTML = listings.map(listing => `
-                <div class="group cursor-pointer" onclick="viewListing(${listing.id})">
-                    <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 group-hover:transform group-hover:scale-105">
-                        <div class="relative">
-                            ${listing.image ? 
-                                `<img src="${listing.image}" alt="${listing.title}" class="w-full h-48 object-cover">` :
-                                `<div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-                                    <i class="fas fa-image text-gray-400 text-4xl"></i>
-                                </div>`
-                            }
-                            ${listing.is_featured ? 
-                                '<div class="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold"><i class="fas fa-star mr-1"></i>Promovat</div>' : 
-                                ''
-                            }
-                        </div>
-                        <div class="p-4">
-                            <h3 class="font-semibold text-gray-800 mb-2 group-hover:text-primary line-clamp-2">
-                                ${truncateText(listing.title, 60)}
+        // Filter featured and recent listings
+        const featuredListings = allListings.filter(listing => listing.is_featured).slice(0, 4);
+        // Sort by creation date for recent, assuming `created_at` is available and sortable
+        const recentListings = [...allListings]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+            .slice(0, 8);
+
+        // Populate featured listings
+        populateListings('featuredListings', featuredListings);
+        
+        // Populate recent listings
+        populateListings('recentListings', recentListings);
+    }
+
+    function populateListings(containerId, listingsToPopulate) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        if (!listingsToPopulate || listingsToPopulate.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12">
+                    <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-gray-500 text-lg">Nu există anunțuri momentan în această secțiune.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = listingsToPopulate.map(listing => {
+            const listingDetailUrl = `/anunt/${listing.id}/`; // Frontend URL
+            const image_url = listing.images && listing.images.length > 0 ? listing.images[0].image : null; // Assuming images is an array of objects with an image URL
+
+            return `
+                <div class="group">
+                    <div class="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 group-hover:transform group-hover:scale-105 h-full flex flex-col">
+                        <a href="${listingDetailUrl}" class="block">
+                            <div class="relative">
+                                ${image_url ? 
+                                    `<img src="${image_url}" alt="${truncateText(listing.title, 30)}" class="w-full h-48 object-cover">` :
+                                    `<div class="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                        <i class="fas fa-image text-gray-400 text-4xl"></i>
+                                    </div>`
+                                }
+                                ${listing.is_featured ? 
+                                    '<div class="absolute top-2 left-2 bg-accent text-white px-2 py-1 rounded-full text-xs font-semibold"><i class="fas fa-star mr-1"></i>Promovat</div>' : 
+                                    ''
+                                }
+                                <div class="absolute top-2 right-2 bg-white/90 text-primary px-2 py-1 rounded-full text-sm font-bold">
+                                    ${listing.price ? formatPrice(listing.price, listing.currency) : 'Preț la cerere'}
+                                </div>
+                            </div>
+                        </a>
+                        <div class="p-4 flex flex-col flex-grow">
+                            <h3 class="font-semibold text-lg mb-2 text-gray-800 group-hover:text-primary line-clamp-2">
+                                <a href="${listingDetailUrl}" class="hover:underline">${truncateText(listing.title, 60)}</a>
                             </h3>
-                            <p class="text-2xl font-bold text-accent mb-2">
-                                ${formatPrice(listing.price)}
+                            <p class="text-gray-600 text-sm mb-1 line-clamp-1"><i class="fas fa-tag mr-1 text-gray-400"></i>${listing.category_name || 'N/A'}</p>
+                            <p class="text-gray-600 text-sm mb-3 line-clamp-1">
+                                <i class="fas fa-map-marker-alt mr-1 text-gray-400"></i>
+                                ${listing.location || 'N/A'}
                             </p>
-                            <p class="text-gray-600 text-sm mb-2">
-                                <i class="fas fa-map-marker-alt mr-1"></i>
-                                ${listing.location}
-                            </p>
-                            <p class="text-gray-500 text-xs">
-                                ${formatDate(listing.created_at)}
-                            </p>
+                            <div class="mt-auto flex items-center justify-between text-xs text-gray-500">
+                                <span><i class="fas fa-eye mr-1"></i>${listing.views || 0}</span>
+                                <span>${formatDate(listing.created_at)}</span>
+                            </div>
+                            <a href="${listingDetailUrl}" class="mt-3 block w-full bg-primary text-white text-center py-2 rounded-lg hover:bg-blue-700 transition duration-300 text-sm">
+                                Vezi detalii
+                            </a>
                         </div>
                     </div>
                 </div>
-            `).join('');
-        }
+            `;
+        }).join('');
+    }
 
-        // Navigation functions
-        function filterByCategory(categoryId) {
-            window.location.href = `/api/listings/?category=${categoryId}`;
-        }
+    // Navigation functions for dynamic elements (if any were to use these)
+    // The category grid items are now direct <a> tags.
+    // Listing items are also direct <a> tags.
 
-        function viewListing(listingId) {
-            window.location.href = `/api/listings/${listingId}/`;
-        }
-
-        // Animate counters
-        function animateCounter(elementId, target) {
-            const element = document.getElementById(elementId);
-            const current = parseInt(element.textContent) || 0;
-            const increment = Math.ceil(target / 50);
-            
-            if (current < target) {
-                element.textContent = Math.min(current + increment, target);
-                setTimeout(() => animateCounter(elementId, target), 50);
-            }
-        }
-
-        // Initialize page
-        document.addEventListener('DOMContentLoaded', async function() {
-            showLoading();
-            
-            try {
-                await Promise.all([
-                    loadCategories(),
-                    loadListings()
-                ]);
-            } catch (error) {
-                console.error('Error loading page data:', error);
-            }
-            
-            hideLoading();
-        });
-
-        // Add scroll effects
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('nav');
-            if (window.scrollY > 100) {
-                navbar.classList.add('shadow-lg');
+    // Animate counters for stats
+    function animateCounter(element, target) {
+        if (!element) return;
+        const current = parseInt(element.textContent) || 0;
+        const duration = 1000; // 1 second
+        const frameRate = 60; // 60fps
+        const totalFrames = Math.round(duration / (1000 / frameRate));
+        const increment = (target - current) / totalFrames;
+        
+        let currentFrame = 0;
+        function updateCounter() {
+            currentFrame++;
+            const newValue = Math.round(current + (increment * currentFrame));
+            element.textContent = newValue;
+            if (currentFrame < totalFrames) {
+                requestAnimationFrame(updateCounter);
             } else {
-                navbar.classList.remove('shadow-lg');
+                element.textContent = target; // Ensure final value is exact
             }
-        });
+        }
+        requestAnimationFrame(updateCounter);
+    }
 
-        // Add search functionality
-        document.querySelector('form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const params = new URLSearchParams();
-            
-            for (let [key, value] of formData.entries()) {
-                if (value.trim()) {
-                    params.append(key, value);
-                }
-            }
-            
-            window.location.href = `/api/listings/?${params.toString()}`;
-        });
-    </script>
-</body>
-</html>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', async function() {
+        if (typeof showLoading === 'function') showLoading();
+        
+        try {
+            await Promise.all([
+                loadCategories(),
+                loadListings()
+            ]);
+        } catch (error) {
+            console.error('Error loading page data:', error);
+        }
+        
+        if (typeof hideLoading === 'function') hideLoading();
+    });
+
+    // Search form submission (uses action attribute now, JS override removed)
+    // The form with id="homeSearchForm" will now submit via its action attribute.
+</script>
+{% endblock %}

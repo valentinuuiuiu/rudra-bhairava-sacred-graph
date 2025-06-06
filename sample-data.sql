@@ -9,35 +9,94 @@ VALUES
   ('alex_popescu', '$2a$10$XQxBtVxj7aJZ3qE7U9JZp.uQZA0Lj6G1CHm8tVrfQK5xbgs3uJgMK', 'salt123', 'alex@example.com', 'Alex', 'Popescu', 'https://randomuser.me/api/portraits/men/3.jpg', 'Car enthusiast', '+40721000004', 'Brasov', FALSE, NOW(), TRUE),
   ('maria_ionescu', '$2a$10$XQxBtVxj7aJZ3qE7U9JZp.uQZA0Lj6G1CHm8tVrfQK5xbgs3uJgMK', 'salt123', 'maria@example.com', 'Maria', 'Ionescu', 'https://randomuser.me/api/portraits/women/2.jpg', 'Real estate agent', '+40721000005', 'Constanta', FALSE, NOW(), TRUE);
 
--- Insert sample categories
-INSERT INTO categories (name, slug, icon, color)
-VALUES
-  ('Real Estate', 'real-estate', 'home', '#4CAF50'),
-  ('Vehicles', 'vehicles', 'car', '#2196F3'),
-  ('Electronics', 'electronics', 'laptop', '#FF9800'),
-  ('Jobs', 'jobs', 'briefcase', '#9C27B0'),
-  ('Services', 'services', 'tools', '#795548'),
-  ('Fashion', 'fashion', 'shirt', '#E91E63'),
-  ('Home & Garden', 'home-garden', 'flower', '#8BC34A'),
-  ('Sports & Leisure', 'sports-leisure', 'bicycle', '#00BCD4');
+-- Delete existing category data from 'categories' table
+DELETE FROM categories;
+-- Reset auto-increment counter for 'categories' table (SQLite specific)
+-- This command is for SQLite. If using a different DB, adjust accordingly.
+DELETE FROM sqlite_sequence WHERE name='categories';
 
--- Insert subcategories
-INSERT INTO categories (name, slug, icon, color, parent_id)
-VALUES
-  ('Apartments', 'apartments', 'apartment', '#4CAF50', 1),
-  ('Houses', 'houses', 'house', '#4CAF50', 1),
-  ('Land', 'land', 'terrain', '#4CAF50', 1),
-  ('Commercial', 'commercial', 'store', '#4CAF50', 1),
-  
-  ('Cars', 'cars', 'car', '#2196F3', 2),
-  ('Motorcycles', 'motorcycles', 'motorcycle', '#2196F3', 2),
-  ('Trucks', 'trucks', 'truck', '#2196F3', 2),
-  ('Auto Parts', 'auto-parts', 'engine', '#2196F3', 2),
-  
-  ('Phones', 'phones', 'phone', '#FF9800', 3),
-  ('Computers', 'computers', 'computer', '#FF9800', 3),
-  ('TV & Audio', 'tv-audio', 'tv', '#FF9800', 3),
-  ('Gaming', 'gaming', 'gamepad', '#FF9800', 3);
+-- Insert new Romanian categories
+-- Main Categories (Expected IDs 1-11)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Imobiliare', 'imobiliare', 'fas fa-home', '#4CAF50', NULL),
+('Auto, Moto și Ambarcațiuni', 'auto-moto-ambarcatiuni', 'fas fa-car', '#2196F3', NULL),
+('Electronice și Electrocasnice', 'electronice-electrocasnice', 'fas fa-laptop', '#FF9800', NULL),
+('Locuri de Muncă', 'locuri-de-munca', 'fas fa-briefcase', '#9C27B0', NULL),
+('Servicii, Afaceri, Echipamente Firme', 'servicii-afaceri-echipamente', 'fas fa-concierge-bell', '#3F51B5', NULL),
+('Modă și Frumusețe', 'moda-frumusete', 'fas fa-tshirt', '#E91E63', NULL),
+('Casă și Grădină', 'casa-gradina', 'fas fa-leaf', '#8BC34A', NULL),
+('Sport, Timp Liber, Artă', 'sport-timp-liber-arta', 'fas fa-futbol', '#FFC107', NULL),
+('Mama și Copilul', 'mama-copilul', 'fas fa-child', '#00BCD4', NULL),
+('Animale de Companie', 'animale-companie', 'fas fa-paw', '#607D8B', NULL),
+('Agro și Industrie', 'agro-industrie', 'fas fa-tractor', '#795548', NULL);
+
+-- Subcategories (Expected IDs start from 12 onwards)
+
+-- Subcategories for 'Imobiliare' (Parent ID: 1)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Apartamente de vânzare', 'apartamente-vanzare', 'far fa-building', '#4CAF50', 1),
+('Apartamente de închiriat', 'apartamente-inchiriat', 'far fa-building', '#4CAF50', 1),
+('Case de vânzare', 'case-vanzare', 'fas fa-home', '#4CAF50', 1),
+('Case de închiriat', 'case-inchiriat', 'fas fa-home', '#4CAF50', 1),
+('Terenuri', 'terenuri', 'fas fa-map-marked-alt', '#4CAF50', 1),
+('Spații comerciale/Birouri', 'spatii-comerciale-birouri', 'fas fa-store', '#4CAF50', 1),
+('Cazare/Turism', 'cazare-turism', 'fas fa-hotel', '#4CAF50', 1);
+
+-- Subcategories for 'Auto, Moto și Ambarcațiuni' (Parent ID: 2)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Autoturisme', 'autoturisme', 'fas fa-car-side', '#2196F3', 2),
+('Motociclete/Scutere/ATV', 'moto-scutere-atv', 'fas fa-motorcycle', '#2196F3', 2),
+('Rulote/Autorulote', 'rulote-autorulote', 'fas fa-caravan', '#2196F3', 2),
+('Camioane/Utilaje', 'camioane-utilaje', 'fas fa-truck', '#2196F3', 2),
+('Ambarcațiuni', 'ambarcatiuni', 'fas fa-ship', '#2196F3', 2),
+('Piese Auto', 'piese-auto', 'fas fa-cogs', '#2196F3', 2),
+('Servicii Auto', 'servicii-auto', 'fas fa-tools', '#2196F3', 2);
+
+-- Subcategories for 'Electronice și Electrocasnice' (Parent ID: 3)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Telefoane', 'telefoane', 'fas fa-mobile-alt', '#FF9800', 3),
+('Calculatoare/Laptopuri', 'calculatoare-laptopuri', 'fas fa-laptop', '#FF9800', 3),
+('TV/Audio/Video', 'tv-audio-video', 'fas fa-tv', '#FF9800', 3),
+('Electrocasnice Mari', 'electrocasnice-mari', 'fas fa-blender-phone', '#FF9800', 3), -- blender-phone is not standard, maybe 'fas fa-server' or specific items
+('Electrocasnice Mici', 'electrocasnice-mici', 'fas fa-coffee', '#FF9800', 3),
+('Jocuri/Console', 'jocuri-console', 'fas fa-gamepad', '#FF9800', 3),
+('Aparate Foto/Video', 'aparate-foto-video', 'fas fa-camera-retro', '#FF9800', 3);
+
+-- Subcategories for 'Locuri de Muncă' (Parent ID: 4)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Oferte de angajare', 'oferte-angajare', 'fas fa-briefcase', '#9C27B0', 4),
+('CV-uri/Cereri de angajare', 'cv-cereri-angajare', 'far fa-file-alt', '#9C27B0', 4),
+('Servicii de recrutare', 'servicii-recrutare', 'fas fa-users-cog', '#9C27B0', 4);
+
+-- Subcategories for 'Modă și Frumusețe' (Parent ID: 6)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Haine Damă', 'haine-dama', 'fas fa-female', '#E91E63', 6),
+('Haine Bărbați', 'haine-barbati', 'fas fa-male', '#E91E63', 6),
+('Haine Copii', 'haine-copii', 'fas fa-child', '#E91E63', 6),
+('Încălțăminte', 'incaltaminte', 'fas fa-shoe-prints', '#E91E63', 6),
+('Accesorii (Genți, Ceasuri, Bijuterii)', 'accesorii-genti-ceasuri-bijuterii', 'fas fa-gem', '#E91E63', 6),
+('Cosmetice/Parfumuri', 'cosmetice-parfumuri', 'fas fa-magic', '#E91E63', 6);
+
+-- Subcategories for 'Casă și Grădină' (Parent ID: 7)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Mobilă/Decorațiuni', 'mobila-decoratiuni', 'fas fa-couch', '#8BC34A', 7),
+('Unelte/Materiale de construcții', 'unelte-materiale-constructii', 'fas fa-tools', '#8BC34A', 7),
+('Articole menaj/Curățenie', 'articole-menaj-curatenie', 'fas fa-broom', '#8BC34A', 7),
+('Plante/Amenajări grădină', 'plante-amenajari-gradina', 'fas fa-seedling', '#8BC34A', 7);
+
+-- Subcategories for 'Mama și Copilul' (Parent ID: 9)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Cărucioare/Scaune auto', 'carucioare-scaune-auto', 'fas fa-baby-carriage', '#00BCD4', 9),
+('Haine/Încălțăminte copii', 'haine-incaltaminte-copii-mama', 'fas fa-child', '#00BCD4', 9), -- Renamed slug slightly
+('Jucării', 'jucarii', 'fas fa-shapes', '#00BCD4', 9),
+('Articole școlare', 'articole-scolare', 'fas fa-graduation-cap', '#00BCD4', 9);
+
+-- Subcategories for 'Animale de Companie' (Parent ID: 10)
+INSERT INTO categories (name, slug, icon, color, parent_id) VALUES
+('Câini', 'caini', 'fas fa-dog', '#607D8B', 10),
+('Pisici', 'pisici', 'fas fa-cat', '#607D8B', 10),
+('Păsări', 'pasari', 'fas fa-dove', '#607D8B', 10),
+('Hrană/Accesorii Animale', 'hrana-accesorii-animale', 'fas fa-bone', '#607D8B', 10);
 
 -- Insert sample listings
 INSERT INTO listings (title, description, price, currency, location, images, user_id, category_id, subcategory_id, status, created_at, updated_at, expires_at, is_premium, views)
@@ -78,3 +137,8 @@ VALUES
   (4, 3, NOW() - INTERVAL '1 day'),
   (5, 4, NOW()),
   (2, 5, NOW() - INTERVAL '4 days');
+
+-- IMPORTANT: Review and update category_id and subcategory_id in the
+-- 'INSERT INTO listings' statements below to match the new category IDs
+-- if specific subcategory relations are important for sample data.
+-- Main category IDs (1-8) used in original listings should still map to the correct top-level category.

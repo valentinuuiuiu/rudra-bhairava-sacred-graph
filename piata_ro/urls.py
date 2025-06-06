@@ -14,17 +14,35 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.contrib.auth import views as auth_views
+from django.conf import settings
+from django.conf.urls.static import static
 
 from piata_ro.views import process_mcp_query, test_endpoint, home, interact_with_mcp_agents, natural_language_query
+from marketplace.views import register_view
 
 urlpatterns = [
-    path('', home, name='home'),  # Root URL pattern
+    path('', include(('marketplace.urls', 'marketplace'), namespace='marketplace')),  # Include marketplace URLs for frontend
     path('admin/', admin.site.urls),
+    
+    # Allauth URLs (includes social auth)
+    path('accounts/', include('allauth.urls')),
+    
+    # Keep custom register view
+    path('register/', register_view, name='register'),
+    
     path('api/', include('api.urls')),
     path('api/query/', natural_language_query, name='natural_language_query'),
     path('mcp/process/', process_mcp_query, name='mcp_processor'),
     path('mcp/agents/', interact_with_mcp_agents, name='mcp_agents'),
     path('test_endpoint/', test_endpoint, name='test_endpoint'),
+    path('legacy/', home, name='legacy_home'),  # Keep old home as legacy
 ]
+
+# Add media serving in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

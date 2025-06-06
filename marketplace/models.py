@@ -29,6 +29,11 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
 
+def listing_image_path(instance, filename):
+    # Generate path like: listings/user_id/listing_id/image.jpg
+    return f"listings/{instance.listing.user.id}/{instance.listing.id}/{filename}"
+
+
 class Listing(models.Model):
     STATUS_CHOICES = (
         ("pending", "Pending"),
@@ -37,13 +42,18 @@ class Listing(models.Model):
         ("expired", "Expired"),
         ("rejected", "Rejected"),
     )
+    
+    CURRENCY_CHOICES = (
+        ("RON", "Lei (RON)"),
+        ("EUR", "Euro (EUR)"),
+        ("USD", "Dolari (USD)"),
+    )
 
     title = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
-    currency = models.CharField(max_length=3, default="RON")
+    currency = models.CharField(max_length=3, default="RON", choices=CURRENCY_CHOICES)
     location = models.CharField(max_length=100)
-    images = models.JSONField(default=list)  # Store image URLs as JSON array
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="listings")
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="listings"
@@ -75,6 +85,30 @@ class Listing(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def main_image(self):
+        image = self.images.filter(is_main=True).first()
+        if not image:
+            image = self.images.first()
+        return image
+
+
+class ListingImage(models.Model):
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to=listing_image_path)
+    is_main = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def save(self, *args, **kwargs):
+        if self.is_main:
+            # Ensure only one main image per listing
+            ListingImage.objects.filter(listing=self.listing).update(is_main=False)
+        super().save(*args, **kwargs)
 
 
 class Message(models.Model):

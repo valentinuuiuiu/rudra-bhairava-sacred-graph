@@ -8,3 +8,9 @@ assets/external/
 .env.local
 .env.*.local
 node_modules
+venv/
+*.sqlite3
+.vscode/
+*.log
+*.pyc
+.DS_Store

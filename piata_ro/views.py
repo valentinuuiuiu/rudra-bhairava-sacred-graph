@@ -150,14 +150,48 @@ def analyze_query_intent(query: str) -> dict:
 def get_marketplace_context() -> dict:
     """Get current marketplace context from database"""
     try:
-        categories = list(Category.objects.values('id', 'name', 'slug'))
+        # Get categories with hierarchical structure
+        main_categories = Category.objects.filter(parent__isnull=True).values(
+            'id', 'name', 'slug', 'icon', 'color'
+        )
+        
+        # Get subcategories grouped by parent
+        subcategories = {}
+        for subcat in Category.objects.filter(parent__isnull=False).values(
+            'id', 'name', 'slug', 'parent_id', 'icon', 'color'
+        ):
+            parent_id = subcat['parent_id']
+            if parent_id not in subcategories:
+                subcategories[parent_id] = []
+            subcategories[parent_id].append(subcat)
+        
+        # Build complete category structure
+        categories_structure = []
+        for category in main_categories:
+            cat_data = dict(category)
+            cat_data['subcategories'] = subcategories.get(category['id'], [])
+            cat_data['listings_count'] = Listing.objects.filter(
+                category_id__in=[category['id']] + [sub['id'] for sub in cat_data['subcategories']]
+            ).count()
+            categories_structure.append(cat_data)
+        
+        # Get overall statistics
         listings_count = Listing.objects.count()
+        active_listings = Listing.objects.filter(status='active').count()
         featured_count = Listing.objects.filter(is_featured=True).count()
         
+        # Get recent listings for context
+        recent_listings = list(Listing.objects.filter(status='active').select_related('category', 'user').values(
+            'id', 'title', 'price', 'currency', 'location', 'category__name', 'created_at'
+        ).order_by('-created_at')[:20])
+        
         return {
-            'categories': categories,
+            'categories': list(main_categories),  # Keep simple format for backward compatibility
+            'categories_structure': categories_structure,  # Enhanced structure with subcategories
             'total_listings': listings_count,
+            'active_listings': active_listings,
             'featured_listings': featured_count,
+            'recent_listings': recent_listings,
             'last_updated': datetime.now().isoformat()
         }
     except Exception as e:
@@ -239,10 +273,20 @@ def process_mcp_query(request):
                 categories_list = [f"{cat['name']}" for cat in marketplace_context['categories']]
                 categories_str = ', '.join(categories_list)
                 
+                # Get enhanced category structure information
+                enhanced_categories = marketplace_context.get('categories_structure', [])
+                categories_detail = ""
+                if enhanced_categories:
+                    categories_detail = "\\n\\nAvailable categories with subcategories:\\n"
+                    for cat in enhanced_categories:
+                        categories_detail += f"- {cat['name']} ({cat['listings_count']} listings)\\n"
+                        for subcat in cat.get('subcategories', []):
+                            categories_detail += f"  • {subcat['name']}\\n"
+                
                 # Format listings data for YAML
                 listings_info = ""
                 if listings_data:
-                    listings_info = "\\n\\nAvailable electronics listings:\\n"
+                    listings_info = "\\n\\nAvailable listings:\\n"
                     for listing in listings_data:
                         listings_info += f"- {listing['title']} ({listing['category']}) - {listing['price']} in {listing['location']}\\n"
                         listings_info += f"  Description: {listing['description']}\\n"
@@ -262,6 +306,9 @@ roles:
       You have access to marketplace data and can provide insights about listings, categories, and market trends.
       Available categories are: {categories_str}.
       Current total listings: {marketplace_context['total_listings']}.
+      Active listings: {marketplace_context['active_listings']}.
+      Featured listings: {marketplace_context['featured_listings']}.
+      {categories_detail}
     tasks:
       analyze_query:
         description: |
@@ -271,6 +318,7 @@ roles:
           
           Provide a detailed response listing the actual items available, their prices, and locations.
           Be specific and mention the exact listings shown above.
+          Include relevant category information and market insights.
           
         expected_output: A detailed response showing the specific marketplace listings with prices and locations
 """
