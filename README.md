@@ -1,5 +1,8 @@
 # 🛒 Piața RO - Romanian Marketplace Platform
 
+**Motto**: Aknolwedging The Limitations of The AI is aknolwedging THe Limitations of Our OLD Patherns Stupid Mind,Dare to Dream and The AI will make it Real
+
+
 **Piața RO** is a modern, full-featured Romanian marketplace platform inspired by popular sites like **Publi24.ro** and **OLX.ro**. Built with cutting-edge technologies, it provides a seamless experience for buying and selling items across Romania.
 
 ## 🌟 Key Features
@@ -62,7 +65,6 @@ piata-ro-project/
 │   ├── views.py                 # Business logic
 │   └── templates/               # HTML templates
 ├── 📊 migrations/               # Database migrations
-├── 🐳 docker-compose.yml        # Docker configuration
 ├── 📦 requirements.txt          # Python dependencies
 └── 🔧 package.json             # Node.js dependencies
 ```
@@ -72,7 +74,6 @@ piata-ro-project/
 ### **Prerequisites**
 - 🐍 **Python 3.8+** - [Download Python](https://python.org)
 - 📦 **Node.js 16+** - [Download Node.js](https://nodejs.org)
-- 🐳 **Docker** (optional) - [Download Docker](https://docker.com)
 
 ### **🔧 Installation**
 

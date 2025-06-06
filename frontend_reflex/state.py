@@ -1,9 +1,10 @@
 """Starea aplicației pentru Piata.ro."""
 
-import reflex as rx
-import httpx
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import httpx
+import reflex as rx
 
 
 class State(rx.State):
@@ -63,7 +64,9 @@ class State(rx.State):
         self.subscription_expires = None
         return rx.redirect("/login")
 
-    async def register(self, username: str, email: str, password: str, confirm_password: str):
+    async def register(
+        self, username: str, email: str, password: str, confirm_password: str
+    ):
         """Înregistrare utilizator nou."""
         self.is_loading = True
         self.error = None
@@ -122,10 +125,14 @@ class State(rx.State):
             # În producție, se va conecta la API-ul Django pentru procesarea plății
             # Simulare pentru dezvoltare
             self.subscription_type = plans[plan]["name"]
-            self.subscription_expires = datetime.now() + timedelta(days=plans[plan]["duration"])
+            self.subscription_expires = datetime.now() + timedelta(
+                days=plans[plan]["duration"]
+            )
             self.credits += plans[plan]["credits"]
             self.is_loading = False
-            return rx.window_alert(f"Abonament {plans[plan]['name']} activat cu succes!")
+            return rx.window_alert(
+                f"Abonament {plans[plan]['name']} activat cu succes!"
+            )
         except Exception as e:
             self.error = f"Eroare la actualizarea abonamentului: {str(e)}"
             self.is_loading = False

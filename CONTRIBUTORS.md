@@ -25,8 +25,8 @@
 - Contribution: Advanced code suggestions and optimization
 
 **OpenHands Agent**
-- Role: AI assistant and co-developer
-- Contribution: Automated development workflows, debugging, and code enhancements
+- Role: Agent manager coordinating AI microagents
+- Contribution: Managed automated development workflows, orchestrated debugging sessions, and directed code enhancement strategies
 
 **OpenHands**
 - Role: Development automation and debugging

@@ -1,6 +1,8 @@
 import reflex as rx
-from frontend_reflex.state import ListingState
+
 from frontend_reflex.components.navbar import navbar
+from frontend_reflex.state import ListingState
+
 
 def listing() -> rx.Component:
     """The listing detail page."""
@@ -38,7 +40,11 @@ def listing() -> rx.Component:
                             rx.heading(ListingState.listing["title"], size="xl"),
                             rx.hstack(
                                 rx.text(
-                                    f"{ListingState.listing['price']} {ListingState.listing['currency']}" if ListingState.listing.get('price') else "Price on request",
+                                    (
+                                        f"{ListingState.listing['price']} {ListingState.listing['currency']}"
+                                        if ListingState.listing.get("price")
+                                        else "Price on request"
+                                    ),
                                     color="blue.500",
                                     font_weight="bold",
                                     font_size="2xl",
@@ -51,7 +57,8 @@ def listing() -> rx.Component:
                                 width="100%",
                             ),
                             rx.cond(
-                                lambda: ListingState.listing.get("images") and len(ListingState.listing["images"]) > 0,
+                                lambda: ListingState.listing.get("images")
+                                and len(ListingState.listing["images"]) > 0,
                                 rx.image(
                                     src=ListingState.listing["images"][0],
                                     height="400px",
@@ -76,11 +83,15 @@ def listing() -> rx.Component:
                                 width="100%",
                             ),
                             rx.box(
-                                rx.heading("Contact Seller", size="lg", margin_top="1em"),
+                                rx.heading(
+                                    "Contact Seller", size="lg", margin_top="1em"
+                                ),
                                 rx.hstack(
                                     rx.avatar(
                                         name=ListingState.listing["user"]["username"],
-                                        src=ListingState.listing["user"].get("avatar", ""),
+                                        src=ListingState.listing["user"].get(
+                                            "avatar", ""
+                                        ),
                                         size="lg",
                                     ),
                                     rx.vstack(
@@ -122,7 +133,9 @@ def listing() -> rx.Component:
             padding_x="4",
             width="100%",
         ),
-        on_mount=lambda: ListingState.set_listing_id(rx.get_query_params().get("id", "")),
+        on_mount=lambda: ListingState.set_listing_id(
+            rx.get_query_params().get("id", "")
+        ),
         width="100%",
         min_height="100vh",
         spacing="0",

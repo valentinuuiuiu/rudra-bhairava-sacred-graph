@@ -1,11 +1,12 @@
 """Pagina pentru gestionarea creditelor."""
 
-import reflex as rx
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
-from frontend_reflex.components.navbar import navbar
+import reflex as rx
+
 from frontend_reflex.components.footer import footer
+from frontend_reflex.components.navbar import navbar
 from frontend_reflex.state import State
 
 
@@ -46,7 +47,9 @@ class CreditsState(State):
                 "type": "subscription",
                 "amount": 20,
                 "credits": 50,
-                "date": (datetime.now() - timedelta(days=15)).strftime("%d.%m.%Y %H:%M"),
+                "date": (datetime.now() - timedelta(days=15)).strftime(
+                    "%d.%m.%Y %H:%M"
+                ),
                 "status": "completed",
                 "payment_method": "paypal",
             },
@@ -91,15 +94,18 @@ class CreditsState(State):
             self.credits += amount
 
             # Adaugă tranzacția în istoric
-            self.transactions.insert(0, {
-                "id": len(self.transactions) + 1,
-                "type": "purchase",
-                "amount": amount * 0.5,  # Preț în EUR (0.5 EUR per credit)
-                "credits": amount,
-                "date": datetime.now().strftime("%d.%m.%Y %H:%M"),
-                "status": "completed",
-                "payment_method": self.payment_method,
-            })
+            self.transactions.insert(
+                0,
+                {
+                    "id": len(self.transactions) + 1,
+                    "type": "purchase",
+                    "amount": amount * 0.5,  # Preț în EUR (0.5 EUR per credit)
+                    "credits": amount,
+                    "date": datetime.now().strftime("%d.%m.%Y %H:%M"),
+                    "status": "completed",
+                    "payment_method": self.payment_method,
+                },
+            )
 
             self.payment_success = f"Ai cumpărat cu succes {amount} credite!"
             self.custom_amount = 0
@@ -113,11 +119,9 @@ def credits() -> rx.Component:
     """Pagina pentru gestionarea creditelor."""
     return rx.box(
         navbar(),
-
         rx.box(
             rx.vstack(
                 rx.heading("Credite și Abonamente", size="xl", mb="6"),
-
                 # Afișare erori/succes
                 rx.cond(
                     CreditsState.payment_error,
@@ -137,7 +141,6 @@ def credits() -> rx.Component:
                         mb="4",
                     ),
                 ),
-
                 # Informații credite și abonament
                 rx.hstack(
                     # Credite
@@ -146,7 +149,9 @@ def credits() -> rx.Component:
                         rx.stat_number(CreditsState.credits),
                         rx.stat_help_text(
                             rx.icon("info"),
-                            rx.text("Folosește creditele pentru a promova anunțurile tale"),
+                            rx.text(
+                                "Folosește creditele pentru a promova anunțurile tale"
+                            ),
                             spacing="1",
                         ),
                         p="6",
@@ -155,17 +160,20 @@ def credits() -> rx.Component:
                         border_radius="lg",
                         bg="blue.50",
                     ),
-
                     # Abonament
                     rx.stat(
                         rx.stat_label("Abonament curent"),
-                        rx.stat_number(CreditsState.subscription_type or "Fără abonament"),
+                        rx.stat_number(
+                            CreditsState.subscription_type or "Fără abonament"
+                        ),
                         rx.stat_help_text(
                             rx.cond(
                                 CreditsState.subscription_expires,
                                 rx.hstack(
                                     rx.icon("time"),
-                                    rx.text(f"Expiră la: {CreditsState.subscription_expires.strftime('%d.%m.%Y') if CreditsState.subscription_expires else 'N/A'}"),
+                                    rx.text(
+                                        f"Expiră la: {CreditsState.subscription_expires.strftime('%d.%m.%Y') if CreditsState.subscription_expires else 'N/A'}"
+                                    ),
                                     spacing="1",
                                 ),
                                 rx.text("Abonează-te pentru a primi credite lunar"),
@@ -177,16 +185,13 @@ def credits() -> rx.Component:
                         border_radius="lg",
                         bg="purple.50",
                     ),
-
                     spacing="6",
                     width="100%",
                 ),
-
                 # Cumpără credite
                 rx.box(
                     rx.vstack(
                         rx.heading("Cumpără credite", size="lg", mb="4"),
-
                         # Pachete de credite
                         rx.hstack(
                             rx.vstack(
@@ -207,7 +212,11 @@ def credits() -> rx.Component:
                             rx.vstack(
                                 rx.heading("50 credite", size="md"),
                                 rx.text("20 EUR", font_weight="bold", font_size="xl"),
-                                rx.text("Economisești 5 EUR", color="green.500", font_size="sm"),
+                                rx.text(
+                                    "Economisești 5 EUR",
+                                    color="green.500",
+                                    font_size="sm",
+                                ),
                                 rx.button(
                                     "Cumpără",
                                     on_click=lambda: CreditsState.purchase_credits(50),
@@ -224,7 +233,11 @@ def credits() -> rx.Component:
                             rx.vstack(
                                 rx.heading("100 credite", size="md"),
                                 rx.text("35 EUR", font_weight="bold", font_size="xl"),
-                                rx.text("Economisești 15 EUR", color="green.500", font_size="sm"),
+                                rx.text(
+                                    "Economisești 15 EUR",
+                                    color="green.500",
+                                    font_size="sm",
+                                ),
                                 rx.button(
                                     "Cumpără",
                                     on_click=lambda: CreditsState.purchase_credits(100),
@@ -248,10 +261,15 @@ def credits() -> rx.Component:
                                     ),
                                     rx.text("credite"),
                                 ),
-                                rx.text(f"{CreditsState.custom_amount * 0.5} EUR", font_weight="bold"),
+                                rx.text(
+                                    f"{CreditsState.custom_amount * 0.5} EUR",
+                                    font_weight="bold",
+                                ),
                                 rx.button(
                                     "Cumpără",
-                                    on_click=lambda: CreditsState.purchase_credits(CreditsState.custom_amount),
+                                    on_click=lambda: CreditsState.purchase_credits(
+                                        CreditsState.custom_amount
+                                    ),
                                     color_scheme="blue",
                                     is_disabled=CreditsState.custom_amount <= 0,
                                 ),
@@ -266,7 +284,6 @@ def credits() -> rx.Component:
                             width="100%",
                             wrap="wrap",
                         ),
-
                         # Metode de plată
                         rx.form_control(
                             rx.form_label("Metodă de plată"),
@@ -303,7 +320,6 @@ def credits() -> rx.Component:
                             ),
                             mt="4",
                         ),
-
                         width="100%",
                         align_items="start",
                         spacing="4",
@@ -316,20 +332,22 @@ def credits() -> rx.Component:
                     width="100%",
                     mt="6",
                 ),
-
                 # Abonamente
                 rx.box(
                     rx.vstack(
                         rx.heading("Abonamente", size="lg", mb="4"),
-
                         rx.hstack(
                             rx.vstack(
                                 rx.heading("Basic", size="md"),
                                 rx.text("10 credite/lună", mb="2"),
-                                rx.text("5 EUR/lună", font_weight="bold", font_size="xl"),
+                                rx.text(
+                                    "5 EUR/lună", font_weight="bold", font_size="xl"
+                                ),
                                 rx.button(
                                     "Abonează-te",
-                                    on_click=lambda: CreditsState.upgrade_subscription("basic"),
+                                    on_click=lambda: CreditsState.upgrade_subscription(
+                                        "basic"
+                                    ),
                                     variant="outline",
                                 ),
                                 p="6",
@@ -342,11 +360,15 @@ def credits() -> rx.Component:
                             rx.vstack(
                                 rx.heading("Premium", size="md"),
                                 rx.text("50 credite/lună", mb="2"),
-                                rx.text("20 EUR/lună", font_weight="bold", font_size="xl"),
+                                rx.text(
+                                    "20 EUR/lună", font_weight="bold", font_size="xl"
+                                ),
                                 rx.badge("Popular", color_scheme="purple", mb="2"),
                                 rx.button(
                                     "Abonează-te",
-                                    on_click=lambda: CreditsState.upgrade_subscription("premium"),
+                                    on_click=lambda: CreditsState.upgrade_subscription(
+                                        "premium"
+                                    ),
                                     color_scheme="purple",
                                 ),
                                 p="6",
@@ -360,10 +382,14 @@ def credits() -> rx.Component:
                             rx.vstack(
                                 rx.heading("Business", size="md"),
                                 rx.text("200 credite/lună", mb="2"),
-                                rx.text("50 EUR/lună", font_weight="bold", font_size="xl"),
+                                rx.text(
+                                    "50 EUR/lună", font_weight="bold", font_size="xl"
+                                ),
                                 rx.button(
                                     "Abonează-te",
-                                    on_click=lambda: CreditsState.upgrade_subscription("business"),
+                                    on_click=lambda: CreditsState.upgrade_subscription(
+                                        "business"
+                                    ),
                                     variant="outline",
                                     color_scheme="orange",
                                 ),
@@ -377,7 +403,6 @@ def credits() -> rx.Component:
                             spacing="4",
                             width="100%",
                         ),
-
                         width="100%",
                         align_items="start",
                         spacing="4",
@@ -390,12 +415,10 @@ def credits() -> rx.Component:
                     width="100%",
                     mt="6",
                 ),
-
                 # Istoricul tranzacțiilor
                 rx.box(
                     rx.vstack(
                         rx.heading("Istoricul tranzacțiilor", size="lg", mb="4"),
-
                         rx.cond(
                             CreditsState.is_loading,
                             rx.center(rx.spinner(size="xl"), width="100%", py="10"),
@@ -432,12 +455,24 @@ def credits() -> rx.Component:
                                                     ),
                                                 ),
                                                 rx.td(
-                                                    f"+{tx['credits']}" if tx["credits"] > 0 else tx["credits"],
-                                                    color="green.500" if tx["credits"] > 0 else "red.500",
+                                                    (
+                                                        f"+{tx['credits']}"
+                                                        if tx["credits"] > 0
+                                                        else tx["credits"]
+                                                    ),
+                                                    color=(
+                                                        "green.500"
+                                                        if tx["credits"] > 0
+                                                        else "red.500"
+                                                    ),
                                                     font_weight="bold",
                                                 ),
                                                 rx.td(
-                                                    f"{tx['amount']} EUR" if tx["amount"] > 0 else "-",
+                                                    (
+                                                        f"{tx['amount']} EUR"
+                                                        if tx["amount"] > 0
+                                                        else "-"
+                                                    ),
                                                 ),
                                                 rx.td(tx.get("payment_method", "-")),
                                                 rx.td(
@@ -446,7 +481,9 @@ def credits() -> rx.Component:
                                                             "completed": "Finalizat",
                                                             "pending": "În așteptare",
                                                             "failed": "Eșuat",
-                                                        }.get(tx["status"], tx["status"]),
+                                                        }.get(
+                                                            tx["status"], tx["status"]
+                                                        ),
                                                         color_scheme={
                                                             "completed": "green",
                                                             "pending": "yellow",
@@ -466,7 +503,6 @@ def credits() -> rx.Component:
                                 ),
                             ),
                         ),
-
                         width="100%",
                         align_items="start",
                         spacing="4",
@@ -480,7 +516,6 @@ def credits() -> rx.Component:
                     mt="6",
                     overflow_x="auto",
                 ),
-
                 max_width="1200px",
                 width="100%",
                 spacing="6",
@@ -489,8 +524,6 @@ def credits() -> rx.Component:
             mx="auto",
             px="4",
         ),
-
         footer(),
-
         on_mount=CreditsState.fetch_transactions,
     )

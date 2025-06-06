@@ -1,5 +1,7 @@
 import reflex as rx
+
 from frontend_reflex.state import AuthState
+
 
 def navbar() -> rx.Component:
     """The navbar component."""
