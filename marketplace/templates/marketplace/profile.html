@@ -14,6 +14,9 @@
                     </div>
                     <h2 class="text-xl font-semibold text-gray-800">{{ user.username }}</h2>
                     <p class="text-gray-500">Membru din {{ user.date_joined|date:"M Y" }}</p>
+                    <a href="{% url 'marketplace:profile_edit' %}" class="inline-block mt-3 bg-primary text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fas fa-edit mr-2"></i>Editează profilul
+                    </a>
                 </div>
                 
                 <nav class="space-y-2">

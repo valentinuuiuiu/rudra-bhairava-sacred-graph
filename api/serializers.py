@@ -28,6 +28,9 @@ class ListingSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     category = CategorySerializer(read_only=True)
     subcategory = CategorySerializer(read_only=True)
+    distance = serializers.SerializerMethodField()
+    full_address = serializers.ReadOnlyField()
+    has_coordinates = serializers.ReadOnlyField()
 
     class Meta:
         model = Listing
@@ -38,6 +41,17 @@ class ListingSerializer(serializers.ModelSerializer):
             "price",
             "currency",
             "location",
+            "latitude",
+            "longitude",
+            "address",
+            "city",
+            "county",
+            "postal_code",
+            "country",
+            "location_verified",
+            "full_address",
+            "has_coordinates",
+            "distance",
             "images",
             "user",
             "category",
@@ -51,7 +65,34 @@ class ListingSerializer(serializers.ModelSerializer):
             "metadata",
             "is_verified",
         ]
-        read_only_fields = ["user", "views", "is_verified", "created_at", "updated_at"]
+        read_only_fields = [
+            "user", 
+            "views", 
+            "is_verified", 
+            "created_at", 
+            "updated_at", 
+            "location_verified",
+            "full_address",
+            "has_coordinates",
+            "distance"
+        ]
+    
+    def get_distance(self, obj):
+        """Calculate distance from a reference point if provided in context"""
+        request = self.context.get('request')
+        if not request:
+            return None
+            
+        ref_lat = request.query_params.get('ref_latitude')
+        ref_lon = request.query_params.get('ref_longitude')
+        
+        if ref_lat and ref_lon and obj.has_coordinates:
+            try:
+                distance = obj.distance_to_point(float(ref_lat), float(ref_lon))
+                return round(distance, 2) if distance else None
+            except (ValueError, TypeError):
+                return None
+        return None
 
 
 class ListingCreateSerializer(serializers.ModelSerializer):
@@ -63,14 +104,45 @@ class ListingCreateSerializer(serializers.ModelSerializer):
             "price",
             "currency",
             "location",
+            "latitude",
+            "longitude", 
+            "address",
+            "city",
+            "county",
+            "postal_code",
+            "country",
             "images",
             "category",
             "subcategory",
         ]
 
     def create(self, validated_data):
+        from marketplace.location_services import LocationService
+        
         validated_data["user"] = self.context["request"].user
-        return super().create(validated_data)
+        listing = super().create(validated_data)
+        
+        # Try to populate coordinates if not provided
+        if not listing.latitude or not listing.longitude:
+            LocationService.populate_listing_coordinates(listing)
+        
+        return listing
+    
+    def update(self, instance, validated_data):
+        from marketplace.location_services import LocationService
+        
+        # Check if location-related fields have changed
+        location_fields = ['location', 'address', 'city', 'county', 'postal_code']
+        location_changed = any(field in validated_data for field in location_fields)
+        
+        # Update the instance
+        updated_instance = super().update(instance, validated_data)
+        
+        # If location changed and no coordinates provided, try to geocode
+        if location_changed and (not validated_data.get('latitude') or not validated_data.get('longitude')):
+            LocationService.populate_listing_coordinates(updated_instance)
+        
+        return updated_instance
 
 
 class MessageSerializer(serializers.ModelSerializer):

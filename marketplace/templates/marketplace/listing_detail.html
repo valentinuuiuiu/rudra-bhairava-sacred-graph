@@ -548,12 +548,12 @@ function fallbackCopyTextToClipboard(text) {
 
 // Report listing functionality
 function reportListing() {
-    if (!{{ user.is_authenticated|yesno:"true,false" }}) {
+    if (!({{ user.is_authenticated|yesno:"true,false" }})) {
         showNotification('Trebuie să fiți conectat pentru a raporta un anunț.', 'error');
         return;
     }
     
-    const listingId = {{ listing.id }};
+    const listingId = "{{ listing.id }}";
     const modal = document.getElementById('reportModal');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -667,7 +667,7 @@ function getNotificationIcon(type) {
 
 // Image Gallery Functions
 let currentImageIndex = 1;
-const totalImages = {{ listing.images.count }};
+const totalImages = {{ listing.images.count|add:"0" }};
 
 function setMainImage(imageUrl, index, thumbnailElement) {
     const mainImage = document.getElementById('main-image');
@@ -865,12 +865,12 @@ function getDirections() {
 }
 
 function loadNearbyListings() {
-    const listingId = {{ listing.id }};
+    const listingIdStr = "{{ listing.id }}";
     const nearbyContainer = document.getElementById('nearby-listings');
     
     if (!nearbyContainer) return;
     
-    fetch(`/api/listings/${listingId}/nearby/`)
+    fetch(`/api/listings/${listingIdStr}/nearby/`)
         .then(response => response.json())
         .then(data => {
             if (data.results && data.results.length > 0) {

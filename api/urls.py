@@ -12,4 +12,9 @@ router.register(r"users", views.UserProfileViewSet)
 
 urlpatterns = [
     path("", include(router.urls)),
+    # Location-based endpoints
+    path("locations/search/", views.search_locations, name="search_locations"),
+    path("locations/popular/", views.get_popular_locations, name="popular_locations"),
+    path("locations/stats/", views.get_location_stats, name="location_stats"),
+    path("listings/populate-coordinates/", views.populate_listing_coordinates, name="populate_coordinates"),
 ]

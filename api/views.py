@@ -1,10 +1,19 @@
 from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework import filters, permissions, status, viewsets
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
+from decimal import Decimal
 
-from marketplace.models import Category, Favorite, Listing, Message, UserProfile
+from marketplace.models import (
+    Category,
+    Favorite,
+    Listing,
+    Message,
+    UserProfile,
+    Location,
+)
+from marketplace.location_services import LocationService
 from .serializers import (
     CategorySerializer,
     FavoriteCreateSerializer,
@@ -93,6 +102,29 @@ class ListingViewSet(viewsets.ModelViewSet):
         location = self.request.query_params.get("location")
         if location:
             queryset = queryset.filter(location__icontains=location)
+        
+        # Filter by coordinates and radius (for location-based search)
+        latitude = self.request.query_params.get("latitude")
+        longitude = self.request.query_params.get("longitude")
+        radius = self.request.query_params.get("radius", "10")  # Default 10km radius
+        
+        if latitude and longitude:
+            try:
+                lat = float(latitude)
+                lon = float(longitude)
+                radius_km = float(radius)
+                
+                # Get nearby listings using our Location model method
+                nearby_ids = [
+                    listing.id for listing in Listing.get_nearby_listings(lat, lon, radius_km)
+                ]
+                if nearby_ids:
+                    queryset = queryset.filter(id__in=nearby_ids)
+                else:
+                    queryset = queryset.none()  # No results if no nearby listings
+                    
+            except (ValueError, TypeError):
+                pass  # Ignore invalid coordinates
 
         return queryset
 
@@ -151,6 +183,75 @@ class ListingViewSet(viewsets.ModelViewSet):
             return Response(
                 {"detail": "Listing not in favorites"}, status=status.HTTP_404_NOT_FOUND
             )
+    
+    @action(detail=True, methods=["get"])
+    def nearby(self, request, pk=None):
+        """Get nearby listings for a specific listing"""
+        listing = self.get_object()
+        
+        if not listing.has_coordinates:
+            return Response(
+                {"detail": "Listing does not have coordinates"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        radius = request.query_params.get("radius", "10")
+        try:
+            radius_km = float(radius)
+        except (ValueError, TypeError):
+            radius_km = 10.0
+        
+        nearby_listings = Listing.get_nearby_listings(
+            float(listing.latitude), 
+            float(listing.longitude), 
+            radius_km, 
+            exclude_listing=listing
+        )
+        
+        serializer = ListingSerializer(nearby_listings, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=["post"])
+    def geocode(self, request):
+        """Geocode an address to get coordinates"""
+        address = request.data.get('address', '')
+        city = request.data.get('city', '')
+        
+        if not address and not city:
+            return Response(
+                {"error": "Address or city is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        result = LocationService.geocode_address(address, city)
+        if result:
+            return Response(result)
+        else:
+            return Response(
+                {"error": "Could not geocode the provided address"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(detail=False, methods=["post"])
+    def reverse_geocode(self, request):
+        """Reverse geocode coordinates to get address"""
+        try:
+            latitude = float(request.data.get('latitude'))
+            longitude = float(request.data.get('longitude'))
+        except (ValueError, TypeError):
+            return Response(
+                {"error": "Valid latitude and longitude are required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        result = LocationService.reverse_geocode(latitude, longitude)
+        if result:
+            return Response(result)
+        else:
+            return Response(
+                {"error": "Could not reverse geocode the provided coordinates"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class MessageViewSet(viewsets.ModelViewSet):
@@ -201,3 +302,89 @@ class UserProfileViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
+
+
+# Location-based API endpoints
+@api_view(['GET'])
+def search_locations(request):
+    """Search for locations by name"""
+    query = request.GET.get('q', '')
+    limit = int(request.GET.get('limit', 10))
+    
+    if not query:
+        return Response(
+            {"error": "Query parameter 'q' is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    results = LocationService.search_locations(query, limit)
+    return Response({'results': results})
+
+
+@api_view(['GET'])
+def get_popular_locations(request):
+    """Get popular Romanian cities for location selection"""
+    cities = []
+    for city, coords in LocationService.ROMANIA_CITIES.items():
+        cities.append({
+            'name': city,
+            'latitude': coords[0],
+            'longitude': coords[1],
+            'type': 'city',
+            'formatted_address': f"{city}, România"
+        })
+    
+    return Response({'results': cities})
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def populate_listing_coordinates(request):
+    """Populate coordinates for listings that don't have them"""
+    user = request.user
+    updated_count = 0
+    
+    # Get user's listings without coordinates
+    listings = Listing.objects.filter(
+        user=user,
+        latitude__isnull=True,
+        longitude__isnull=True
+    )
+    
+    for listing in listings:
+        if LocationService.populate_listing_coordinates(listing):
+            updated_count += 1
+    
+    return Response({
+        'message': f'Updated coordinates for {updated_count} listings',
+        'updated_count': updated_count
+    })
+
+
+@api_view(['GET'])
+def get_location_stats(request):
+    """Get statistics about listings by location"""
+    from django.db.models import Count
+    
+    # Get listings count by city
+    city_stats = (
+        Listing.objects
+        .filter(status='active', city__isnull=False)
+        .values('city', 'county')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:20]
+    )
+    
+    # Get listings count by county
+    county_stats = (
+        Listing.objects
+        .filter(status='active', county__isnull=False)
+        .values('county')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:20]
+    )
+    
+    return Response({
+        'cities': list(city_stats),
+        'counties': list(county_stats)
+    })

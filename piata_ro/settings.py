@@ -48,6 +48,15 @@ PRAISONAI_CONFIG = {
     }
 }
 
+# OpenAI Configuration
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# LangSmith Configuration
+LANGCHAIN_TRACING_V2 = True
+LANGCHAIN_ENDPOINT = "https://api.smith.langchain.com"
+LANGCHAIN_API_KEY = "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"
+LANGCHAIN_PROJECT = "piata-ro-mcp-orchestrator"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -69,6 +78,7 @@ INSTALLED_APPS = [
     # Local apps
     'api',
     'marketplace',
+    'ai_assistant',
 ]
 
 MIDDLEWARE = [
@@ -98,6 +108,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             os.path.join(BASE_DIR, 'marketplace', 'templates'),
+            os.path.join(BASE_DIR, 'ai_assistant', 'templates'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -211,18 +222,42 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 # Google OAuth credentials from environment variables
-GOOGLE_CLIENT_ID = os.getenv('GOOGLE_CLIENT_ID')
-GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_CLIENT_SECRET')
+GOOGLE_CLIENT_ID = os.getenv('GOOGLE_OAUTH2_CLIENT_ID')
+GOOGLE_CLIENT_SECRET = os.getenv('GOOGLE_OAUTH2_CLIENT_SECRET')
 
-# If environment variables are provided, configure them
-if GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET:
-    SOCIALACCOUNT_PROVIDERS['google']['APP'] = {
-        'client_id': GOOGLE_CLIENT_ID,
-        'secret': GOOGLE_CLIENT_SECRET,
-        'key': ''
-    }
+# Note: Social applications are configured via Django admin, not here
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Stripe Configuration
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY')
+STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+
+# Credits and Premium Features
+CREDITS_PER_DOLLAR = 10  # 1 USD = 10 credits
+FEATURED_LISTING_COST = 50  # 50 credits for 30 days featured
+PREMIUM_LISTING_COST = 20   # 20 credits for premium badge
+SUBSCRIPTION_PLANS = {
+    'basic': {
+        'name': 'Basic Plan',
+        'price': 9.99,
+        'credits': 100,
+        'features': ['Premium badge', 'Priority support']
+    },
+    'pro': {
+        'name': 'Pro Plan', 
+        'price': 19.99,
+        'credits': 250,
+        'features': ['Featured listings', 'Premium badge', 'Analytics', 'Priority support']
+    },
+    'business': {
+        'name': 'Business Plan',
+        'price': 39.99, 
+        'credits': 500,
+        'features': ['Unlimited featured listings', 'Premium badge', 'Advanced analytics', 'Dedicated support']
+    }
+}

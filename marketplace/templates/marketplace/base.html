@@ -165,8 +165,82 @@
     <main>
         {% block content %}{% endblock %}
     </main>
-        {% block footer %}{% endblock %}
-    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white mt-16">
+        <div class="container mx-auto px-4 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <!-- Company Info -->
+                <div class="md:col-span-1">
+                    <h3 class="text-xl font-bold mb-4">
+                        <i class="fas fa-store mr-2"></i>Piata.ro
+                    </h3>
+                    <p class="text-gray-300 mb-4">
+                        Platforma numărul 1 pentru anunțuri gratuite în România. 
+                        Găsește sau publică anunțuri rapid și ușor.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">
+                            <i class="fab fa-instagram text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Quick Links -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Link-uri rapide</h4>
+                    <ul class="space-y-2">
+                        <li><a href="{% url 'marketplace:home' %}" class="text-gray-300 hover:text-white transition-colors">Acasă</a></li>
+                        <li><a href="{% url 'marketplace:categories' %}" class="text-gray-300 hover:text-white transition-colors">Categorii</a></li>
+                        <li><a href="{% url 'marketplace:listings' %}" class="text-gray-300 hover:text-white transition-colors">Anunțuri</a></li>
+                        <li><a href="{% url 'marketplace:add_listing' %}" class="text-gray-300 hover:text-white transition-colors">Adaugă anunț</a></li>
+                    </ul>
+                </div>
+
+                <!-- Categories -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Categorii populare</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Auto</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Imobiliare</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Electronice</a></li>
+                        <li><a href="#" class="text-gray-300 hover:text-white transition-colors">Fashion</a></li>
+                    </ul>
+                </div>
+
+                <!-- Support -->
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Suport</h4>
+                    <ul class="space-y-2">
+                        <li><a href="{% url 'marketplace:help' %}" class="text-gray-300 hover:text-white transition-colors">Ajutor</a></li>
+                        <li><a href="{% url 'marketplace:contact' %}" class="text-gray-300 hover:text-white transition-colors">Contact</a></li>
+                        <li><a href="{% url 'marketplace:about' %}" class="text-gray-300 hover:text-white transition-colors">Despre noi</a></li>
+                        <li><a href="{% url 'marketplace:terms' %}" class="text-gray-300 hover:text-white transition-colors">Termeni și condiții</a></li>
+                        <li><a href="{% url 'marketplace:privacy' %}" class="text-gray-300 hover:text-white transition-colors">Politica de confidențialitate</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <hr class="border-gray-700 my-8">
+            
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <p class="text-gray-300 text-sm">
+                    © 2025 Piata.ro. Toate drepturile rezervate.
+                </p>
+                <div class="mt-4 md:mt-0 flex space-x-4">
+                    <a href="{% url 'marketplace:terms' %}" class="text-gray-300 hover:text-white text-sm transition-colors">Termeni</a>
+                    <a href="{% url 'marketplace:privacy' %}" class="text-gray-300 hover:text-white text-sm transition-colors">Confidențialitate</a>
+                    <a href="{% url 'marketplace:contact' %}" class="text-gray-300 hover:text-white text-sm transition-colors">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Custom JavaScript -->
     {% block extra_js %}{% endblock %}

@@ -1,6 +1,17 @@
 from django.contrib import admin
+from django.urls import path
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+import json
+import asyncio
+import httpx
+from datetime import datetime
 
 from .models import Category, Favorite, Listing, Message, UserProfile, ListingReport
+from .models_chat import ChatConversation, ChatMessage
 
 
 @admin.register(Category)

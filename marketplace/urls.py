@@ -22,9 +22,27 @@ urlpatterns = [
     path('anunt/<int:listing_id>/', views.listing_detail_view, name='listing_detail'),
     path('adauga-anunt/', views.add_listing_view, name='add_listing'),
     path('profil/', views.profile_view, name='profile'),
+    path('profil/editare/', views.profile_edit_view, name='profile_edit'),
     path('mesaje/', views.messages_view, name='messages'),
+    path('conversatie/<int:user_id>/', views.conversation_view, name='conversation'),
+    path('trimite-mesaj/<int:listing_id>/', views.send_message_view, name='send_message'),
     path('favorite/', views.favorites_view, name='favorites'),
-    path('cautare/', views.search_view, name='search'),
+    path('favorite/toggle/<int:listing_id>/', views.toggle_favorite_view, name='toggle_favorite'),
+    path('raportare/<int:listing_id>/', views.report_listing_view, name='report_listing'),
+    path('utilizator/<str:username>/', views.public_profile_view, name='public_profile'),
+    
+    # Credits and Promotion System
+    path('credite/', views.credits_dashboard, name='buy_credits'),
+    path('credite/plata/', views.process_payment_view, name='process_payment'),
+    path('credite/succes/', views.payment_success, name='payment_success'),
+    path('promoveaza/<int:listing_id>/', views.promote_listing_view, name='promote_listing'),
+    
+    # Legal Pages
+    path('termeni-si-conditii/', views.terms_of_service_view, name='terms'),
+    path('politica-confidentialitate/', views.privacy_policy_view, name='privacy'),
+    path('contact/', views.contact_view, name='contact'),
+    path('despre-noi/', views.about_view, name='about'),
+    path('ajutor/', views.help_view, name='help'),
     
     # API endpoints (keeping existing structure)
     path("api/", include(router.urls)),

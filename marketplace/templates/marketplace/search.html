@@ -11,8 +11,8 @@
             <i class="fas fa-search mr-3 text-primary"></i>Rezultate pentru "{{ query }}"
         </h1>
         <p class="text-gray-600">
-            {% if results.count > 0 %}
-                Am găsit {{ results.count }} anunțuri care se potrivesc căutării tale
+            {% if total_results > 0 %}
+                Am găsit {{ total_results }} anunțuri care se potrivesc căutării tale
             {% else %}
                 Nu am găsit anunțuri pentru căutarea ta
             {% endif %}
@@ -60,9 +60,34 @@
                 <!-- Location -->
                 <div>
                     <label for="location" class="block text-sm font-medium text-gray-700 mb-2">Locație</label>
-                    <input type="text" id="location" name="location" value="{{ request.GET.location }}"
-                           placeholder="Oraș, județ..."
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                    <div class="relative">
+                        <input type="text" id="location" name="location" value="{{ request.GET.location }}"
+                               placeholder="Oraș, județ..."
+                               class="w-full px-3 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-map-marker-alt text-gray-400"></i>
+                        </div>
+                        <button type="button" id="use-current-location" 
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-primary hover:text-blue-700">
+                            <i class="fas fa-crosshairs"></i>
+                        </button>
+                    </div>
+                    <div class="mt-2">
+                        <label class="flex items-center text-sm text-gray-600">
+                            <input type="checkbox" id="enable-distance" name="enable_distance" 
+                                   {% if request.GET.enable_distance %}checked{% endif %}
+                                   class="rounded border-gray-300 text-primary focus:ring-primary mr-2">
+                            Caută în raza de 
+                            <select name="distance" class="ml-1 mr-1 border-0 bg-transparent focus:ring-0 text-primary">
+                                <option value="5" {% if request.GET.distance == "5" %}selected{% endif %}>5</option>
+                                <option value="10" {% if request.GET.distance == "10" or not request.GET.distance %}selected{% endif %}>10</option>
+                                <option value="25" {% if request.GET.distance == "25" %}selected{% endif %}>25</option>
+                                <option value="50" {% if request.GET.distance == "50" %}selected{% endif %}>50</option>
+                                <option value="100" {% if request.GET.distance == "100" %}selected{% endif %}>100</option>
+                            </select>
+                            km
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Price Min -->
@@ -101,6 +126,7 @@
                             <option value="price" {% if request.GET.sort == 'price' %}selected{% endif %}>Preț crescător</option>
                             <option value="-price" {% if request.GET.sort == '-price' %}selected{% endif %}>Preț descrescător</option>
                             <option value="title" {% if request.GET.sort == 'title' %}selected{% endif %}>Alfabetic</option>
+                            <option value="distance" {% if request.GET.sort == 'distance' %}selected{% endif %}>Distanță (aproape)</option>
                         </select>
                     </div>
 
@@ -348,4 +374,184 @@
     </div>
     {% endif %}
 </div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Location services for search
+    const useCurrentLocationBtn = document.getElementById('use-current-location');
+    const locationInput = document.getElementById('location');
+    const enableDistanceCheckbox = document.getElementById('enable-distance');
+    const distanceSelect = document.querySelector('select[name="distance"]');
+    
+    // Get current location for search
+    useCurrentLocationBtn.addEventListener('click', function() {
+        if ('geolocation' in navigator) {
+            // Show loading state
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    
+                    // Add hidden fields for coordinates
+                    let latInput = document.querySelector('input[name="user_lat"]');
+                    let lngInput = document.querySelector('input[name="user_lng"]');
+                    
+                    if (!latInput) {
+                        latInput = document.createElement('input');
+                        latInput.type = 'hidden';
+                        latInput.name = 'user_lat';
+                        locationInput.parentNode.appendChild(latInput);
+                    }
+                    if (!lngInput) {
+                        lngInput = document.createElement('input');
+                        lngInput.type = 'hidden';
+                        lngInput.name = 'user_lng';
+                        locationInput.parentNode.appendChild(lngInput);
+                    }
+                    
+                    latInput.value = lat;
+                    lngInput.value = lng;
+                    
+                    // Reverse geocode to get city name
+                    fetch(`/api/location/reverse-geocode/?lat=${lat}&lng=${lng}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                locationInput.value = data.city || data.display_name || 'Locația curentă';
+                                // Enable distance search automatically
+                                enableDistanceCheckbox.checked = true;
+                                distanceSelect.disabled = false;
+                            }
+                            useCurrentLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+                        })
+                        .catch(error => {
+                            console.error('Reverse geocoding error:', error);
+                            locationInput.value = 'Locația curentă';
+                            enableDistanceCheckbox.checked = true;
+                            distanceSelect.disabled = false;
+                            useCurrentLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+                        });
+                },
+                function(error) {
+                    console.error('Geolocation error:', error);
+                    alert('Nu s-a putut accesa locația curentă. Te rog să introduci manual orașul.');
+                    useCurrentLocationBtn.innerHTML = '<i class="fas fa-crosshairs"></i>';
+                }
+            );
+        } else {
+            alert('Browserul nu suportă geolocația. Te rog să introduci manual orașul.');
+        }
+    });
+    
+    // Enable/disable distance filter
+    enableDistanceCheckbox.addEventListener('change', function() {
+        distanceSelect.disabled = !this.checked;
+        if (!this.checked) {
+            // Remove coordinate inputs when disabled
+            const latInput = document.querySelector('input[name="user_lat"]');
+            const lngInput = document.querySelector('input[name="user_lng"]');
+            if (latInput) latInput.remove();
+            if (lngInput) lngInput.remove();
+        }
+    });
+    
+    // Dynamic subcategory loading for category filter
+    const categorySelect = document.getElementById('category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            const categoryId = this.value;
+            // You can add subcategory filtering here if needed
+        });
+    }
+    
+    // Auto-suggest for location input
+    let locationTimeout;
+    locationInput.addEventListener('input', function() {
+        clearTimeout(locationTimeout);
+        const query = this.value.trim();
+        
+        if (query.length > 2) {
+            locationTimeout = setTimeout(() => {
+                searchLocations(query);
+            }, 500);
+        }
+    });
+    
+    function searchLocations(query) {
+        fetch(`/api/location/search/?q=${encodeURIComponent(query)}&limit=5`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.results.length > 0) {
+                    showLocationSuggestions(data.results);
+                }
+            })
+            .catch(error => {
+                console.error('Location search error:', error);
+            });
+    }
+    
+    function showLocationSuggestions(results) {
+        // Remove existing suggestions
+        const existing = document.getElementById('location-suggestions');
+        if (existing) existing.remove();
+        
+        // Create suggestions dropdown
+        const suggestions = document.createElement('div');
+        suggestions.id = 'location-suggestions';
+        suggestions.className = 'absolute z-10 w-full bg-white border border-gray-300 rounded-lg shadow-lg mt-1';
+        
+        results.forEach(result => {
+            const item = document.createElement('div');
+            item.className = 'px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0';
+            item.innerHTML = `
+                <div class="font-medium">${result.display_name}</div>
+                <div class="text-sm text-gray-500">${result.city || ''} ${result.county || ''}</div>
+            `;
+            item.addEventListener('click', () => {
+                locationInput.value = result.display_name;
+                suggestions.remove();
+                
+                // Add coordinates for distance search
+                let latInput = document.querySelector('input[name="user_lat"]');
+                let lngInput = document.querySelector('input[name="user_lng"]');
+                
+                if (!latInput) {
+                    latInput = document.createElement('input');
+                    latInput.type = 'hidden';
+                    latInput.name = 'user_lat';
+                    locationInput.parentNode.appendChild(latInput);
+                }
+                if (!lngInput) {
+                    lngInput = document.createElement('input');
+                    lngInput.type = 'hidden';
+                    lngInput.name = 'user_lng';
+                    locationInput.parentNode.appendChild(lngInput);
+                }
+                
+                latInput.value = result.latitude;
+                lngInput.value = result.longitude;
+                
+                // Enable distance search
+                enableDistanceCheckbox.checked = true;
+                distanceSelect.disabled = false;
+            });
+            suggestions.appendChild(item);
+        });
+        
+        locationInput.parentNode.style.position = 'relative';
+        locationInput.parentNode.appendChild(suggestions);
+        
+        // Remove suggestions when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!locationInput.contains(e.target) && !suggestions.contains(e.target)) {
+                suggestions.remove();
+            }
+        }, { once: true });
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

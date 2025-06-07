@@ -1,0 +1,152 @@
+{% extends 'marketplace/base.html' %}
+
+{% block title %}Conversație cu {{ other_user.username }} - Piata.ro{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+                <a href="{% url 'marketplace:messages' %}" class="text-gray-600 hover:text-primary">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div class="flex items-center space-x-3">
+                    <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                        <i class="fas fa-user text-gray-600"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-800">{{ other_user.username }}</h1>
+                        <p class="text-sm text-gray-500">
+                            {% if other_user.profile.location %}
+                                <i class="fas fa-map-marker-alt mr-1"></i>{{ other_user.profile.location }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages Container -->
+    <div class="bg-white rounded-lg shadow-md h-96 flex flex-col">
+        <!-- Messages Area -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4" id="messages-container">
+            {% for message in messages %}
+            <div class="flex {% if message.sender == user %}justify-end{% else %}justify-start{% endif %}">
+                <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg {% if message.sender == user %}bg-primary text-white{% else %}bg-gray-200 text-gray-800{% endif %}">
+                    <p class="text-sm">{{ message.content }}</p>
+                    <div class="text-xs mt-1 {% if message.sender == user %}text-blue-100{% else %}text-gray-500{% endif %}">
+                        {{ message.created_at|date:"H:i" }}
+                        {% if message.listing %}
+                            <span class="block mt-1">
+                                <i class="fas fa-tag mr-1"></i>Despre: 
+                                <a href="{% url 'marketplace:listing_detail' message.listing.id %}" 
+                                   class="{% if message.sender == user %}text-blue-100 hover:text-white{% else %}text-primary hover:text-blue-700{% endif %} underline">
+                                    {{ message.listing.title|truncatechars:30 }}
+                                </a>
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-comments text-4xl mb-4"></i>
+                <p>Începe o conversație!</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Message Input -->
+        <div class="border-t border-gray-200 p-4">
+            <form method="post" class="flex space-x-4" id="message-form">
+                {% csrf_token %}
+                <input type="text" 
+                       name="content" 
+                       id="message-input"
+                       placeholder="Scrie un mesaj..." 
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                       required>
+                <button type="submit" 
+                        class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-paper-plane mr-2"></i>Trimite
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesContainer = document.getElementById('messages-container');
+    const messageForm = document.getElementById('message-form');
+    const messageInput = document.getElementById('message-input');
+    
+    // Scroll to bottom of messages
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    
+    // Focus on input
+    messageInput.focus();
+    
+    // Handle form submission with AJAX
+    messageForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const content = messageInput.value.trim();
+        
+        if (!content) return;
+        
+        // Add message to UI immediately
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'flex justify-end';
+        messageDiv.innerHTML = `
+            <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg bg-primary text-white">
+                <p class="text-sm">${content}</p>
+                <div class="text-xs mt-1 text-blue-100">
+                    Trimitere...
+                </div>
+            </div>
+        `;
+        messagesContainer.appendChild(messageDiv);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Clear input
+        messageInput.value = '';
+        
+        // Send AJAX request
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the time in the message
+                const timeSpan = messageDiv.querySelector('.text-xs');
+                timeSpan.textContent = data.message.created_at;
+            } else {
+                // Remove the message if it failed
+                messageDiv.remove();
+                alert('Eroare la trimiterea mesajului');
+            }
+        })
+        .catch(error => {
+            messageDiv.remove();
+            alert('Eroare la trimiterea mesajului');
+        });
+    });
+    
+    // Enter key to send message
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            messageForm.dispatchEvent(new Event('submit'));
+        }
+    });
+});
+</script>
+{% endblock %}

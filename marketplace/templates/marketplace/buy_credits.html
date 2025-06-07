@@ -1,0 +1,204 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+
+{% block title %}Cumpără Credite - Piata.ro{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">Cumpără Credite</h1>
+            <p class="text-xl text-gray-600 mb-8">Promovează-ți anunțurile pe prima pagină</p>
+            
+            <!-- Current Credits -->
+            <div class="bg-white rounded-lg shadow-md p-6 max-w-md mx-auto mb-8">
+                <div class="text-center">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2">Creditele tale actuale</h3>
+                    <div class="text-3xl font-bold text-primary">
+                        {{ user.profile.credits|floatformat:1 }} 
+                        <span class="text-lg font-normal text-gray-600">credite</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            
+            <!-- Credits Purchase -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Pachete de Credite</h2>
+                
+                <!-- Pricing Info -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h3 class="font-semibold text-blue-900 mb-2">Prețuri simple și transparente:</h3>
+                    <ul class="text-blue-800 space-y-1">
+                        <li>• <strong>1 Credit = 1€ = 5 RON</strong></li>
+                        <li>• <strong>Promovare pe prima pagină = 0.5 credite/zi</strong></li>
+                        <li>• Anunțurile de bază rămân <strong>GRATUITE pentru totdeauna</strong></li>
+                    </ul>
+                </div>
+
+                <form method="post" action="{% url 'buy_credits' %}" id="credits-form">
+                    {% csrf_token %}
+                    
+                    <!-- Credit Packages -->
+                    <div class="space-y-4 mb-6">
+                        {% for value, label in form.credits.field.choices %}
+                            <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="radio" name="credits" value="{{ value }}" 
+                                       class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                                       {% if forloop.first %}checked{% endif %}>
+                                <div class="ml-3 flex-1">
+                                    <span class="block text-lg font-medium text-gray-900">{{ label }}</span>
+                                    <span class="text-sm text-gray-500">
+                                        {% if value == "1" %}Perfect pentru un test{% endif %}
+                                        {% if value == "5" %}Ideal pentru câteva promovări{% endif %}
+                                        {% if value == "10" %}Recomandat pentru utilizatori activi{% endif %}
+                                        {% if value == "20" %}Cel mai popular{% endif %}
+                                        {% if value == "50" %}Pentru utilizatori intensivi{% endif %}
+                                    </span>
+                                </div>
+                            </label>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Currency Selection -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">Moneda de plată:</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            {% for value, label in form.currency.field.choices %}
+                                <label class="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                                    <input type="radio" name="currency" value="{{ value }}" 
+                                           class="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                                           {% if value == "ron" %}checked{% endif %}>
+                                    <span class="ml-2 text-sm font-medium text-gray-900">{{ label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Total Display -->
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="flex justify-between items-center">
+                            <span class="text-lg font-medium text-gray-800">Total de plată:</span>
+                            <span class="text-2xl font-bold text-primary" id="total-amount">5 RON</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Button -->
+                    <button type="submit" class="w-full bg-primary text-white py-3 px-6 rounded-lg font-semibold hover:bg-primary-dark transition duration-200">
+                        Continuă la Plată cu Stripe
+                    </button>
+                </form>
+            </div>
+
+            <!-- How it Works -->
+            <div class="bg-white rounded-lg shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-gray-900 mb-6">Cum Funcționează?</h2>
+                
+                <div class="space-y-6">
+                    <!-- Step 1 -->
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                                1
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Publici anunțul GRATUIT</h3>
+                            <p class="text-gray-600">Toate anunțurile de bază sunt și rămân gratuite pentru totdeauna.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                                2
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Cumperi credite când vrei</h3>
+                            <p class="text-gray-600">1 Credit = 1€ = 5 RON. Cumperi doar când ai nevoie.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                                3
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Promovezi anunțul</h3>
+                            <p class="text-gray-600">0.5 credite pe zi pentru a apărea pe prima pagină și a fi văzut de mai mulți utilizatori.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center font-bold">
+                                4
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Primești mai multe vizualizări</h3>
+                            <p class="text-gray-600">Anunțurile promovate apar pe prima pagină și primesc mai multe clicks.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Benefits -->
+                <div class="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <h4 class="font-semibold text-green-900 mb-2">Avantaje:</h4>
+                    <ul class="text-green-800 text-sm space-y-1">
+                        <li>✓ Fără abonamente - plătești doar când promovezi</li>
+                        <li>✓ Creditele nu expiră niciodată</li>
+                        <li>✓ Poți promova oricând vrei</li>
+                        <li>✓ Anunțurile de bază rămân gratuite</li>
+                        <li>✓ Plată securizată prin Stripe</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const creditInputs = document.querySelectorAll('input[name="credits"]');
+    const currencyInputs = document.querySelectorAll('input[name="currency"]');
+    const totalAmount = document.getElementById('total-amount');
+    
+    function updateTotal() {
+        const selectedCredits = document.querySelector('input[name="credits"]:checked').value;
+        const selectedCurrency = document.querySelector('input[name="currency"]:checked').value;
+        
+        let amount;
+        if (selectedCurrency === 'eur') {
+            amount = selectedCredits + ' EUR';
+        } else {
+            amount = (selectedCredits * 5) + ' RON';
+        }
+        
+        totalAmount.textContent = amount;
+    }
+    
+    creditInputs.forEach(input => {
+        input.addEventListener('change', updateTotal);
+    });
+    
+    currencyInputs.forEach(input => {
+        input.addEventListener('change', updateTotal);
+    });
+    
+    // Initial update
+    updateTotal();
+});
+</script>
+
+{% endblock %}
