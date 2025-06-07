@@ -9,8 +9,19 @@ from django.shortcuts import redirect
 from django.contrib.auth import login
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
+from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone
+from decimal import Decimal
+# Note: stripe will be installed separately
+try:
+    import stripe
+    stripe.api_key = getattr(settings, 'STRIPE_SECRET_KEY', '')
+except ImportError:
+    stripe = None
 
-from .models import Category, Favorite, Listing, Message, UserProfile, ListingImage
+from .models import Category, Favorite, Listing, Message, UserProfile, ListingImage, CreditPackage, Payment, CreditTransaction, ListingBoost, ListingReport
 from .serializers import (
     CategorySerializer,
     FavoriteCreateSerializer,
@@ -22,8 +33,10 @@ from .serializers import (
     UserProfileSerializer,
     UserSerializer,
 )
-from .forms import ListingForm, CustomUserCreationForm
+from .forms import ListingForm, CustomUserCreationForm, UserProfileForm, UserUpdateForm
 
+# Configure Stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     """
@@ -405,7 +418,7 @@ def add_listing_view(request):
                 ListingImage.objects.create(
                     listing=listing,
                     image=image,
-                    is_primary=(i == 0)  # First image is primary
+                    is_main=(i == 0)  # First image is main
                 )
             
             messages.success(request, 'Anunțul a fost creat cu succes!')
@@ -444,24 +457,156 @@ def profile_view(request):
     return render(request, "marketplace/profile.html", context)
 
 
+@login_required
+def profile_edit_view(request):
+    """Profile edit page."""
+    user_form = UserUpdateForm(instance=request.user)
+    profile_form = UserProfileForm(instance=request.user.profile)
+    
+    if request.method == 'POST':
+        user_form = UserUpdateForm(request.POST, instance=request.user)
+        profile_form = UserProfileForm(request.POST, instance=request.user.profile)
+        
+        if user_form.is_valid() and profile_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            messages.success(request, 'Profilul tău a fost actualizat cu succes!')
+            return redirect('marketplace:profile')
+    
+    context = {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'page_title': 'Editează profilul',
+    }
+    
+    return render(request, "marketplace/profile_edit.html", context)
+
+
 def messages_view(request):
-    """Messages page."""
+    """Messages page with conversation grouping."""
     from django.shortcuts import redirect
+    from django.db.models import Q, Max, Count
     
     if not request.user.is_authenticated:
         return redirect('login')
     
-    # Get messages for current user
-    received_messages = Message.objects.filter(receiver=request.user).order_by("-created_at")
-    sent_messages = Message.objects.filter(sender=request.user).order_by("-created_at")
+    # Get conversations - group messages by participants
+    conversations = []
+    
+    # Get all unique conversation partners
+    conversation_users = User.objects.filter(
+        Q(sent_messages__receiver=request.user) | 
+        Q(received_messages__sender=request.user)
+    ).distinct().exclude(id=request.user.id)
+    
+    for other_user in conversation_users:
+        # Get latest message in this conversation
+        latest_message = Message.objects.filter(
+            (Q(sender=request.user, receiver=other_user) | 
+             Q(sender=other_user, receiver=request.user))
+        ).order_by('-created_at').first()
+        
+        # Count unread messages from this user
+        unread_count = Message.objects.filter(
+            sender=other_user, 
+            receiver=request.user, 
+            is_read=False
+        ).count()
+        
+        if latest_message:
+            conversations.append({
+                'other_user': other_user,
+                'last_message': latest_message,
+                'unread_count': unread_count,
+            })
+    
+    # Sort conversations by latest message
+    conversations.sort(key=lambda x: x['last_message'].created_at, reverse=True)
     
     context = {
-        "received_messages": received_messages,
-        "sent_messages": sent_messages,
+        "conversations": conversations,
         "page_title": "Mesajele mele",
     }
     
     return render(request, "marketplace/messages.html", context)
+
+
+@login_required
+def conversation_view(request, user_id):
+    """View a conversation with a specific user."""
+    from django.shortcuts import get_object_or_404
+    from django.http import JsonResponse
+    from django.db.models import Q
+    
+    other_user = get_object_or_404(User, id=user_id)
+    
+    # Get all messages between these two users
+    messages = Message.objects.filter(
+        (Q(sender=request.user, receiver=other_user) | 
+         Q(sender=other_user, receiver=request.user))
+    ).order_by('created_at')
+    
+    # Mark messages as read
+    Message.objects.filter(
+        sender=other_user, 
+        receiver=request.user, 
+        is_read=False
+    ).update(is_read=True)
+    
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            message = Message.objects.create(
+                sender=request.user,
+                receiver=other_user,
+                content=content
+            )
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': {
+                        'id': message.id,
+                        'content': message.content,
+                        'created_at': message.created_at.strftime('%H:%M'),
+                        'sender': message.sender.username
+                    }
+                })
+            return redirect('marketplace:conversation', user_id=user_id)
+    
+    context = {
+        'other_user': other_user,
+        'messages': messages,
+        'page_title': f'Conversație cu {other_user.username}',
+    }
+    
+    return render(request, "marketplace/conversation.html", context)
+
+
+@login_required
+def send_message_view(request, listing_id):
+    """Send a message about a specific listing."""
+    from django.shortcuts import get_object_or_404
+    from django.http import JsonResponse
+    
+    listing = get_object_or_404(Listing, id=listing_id)
+    
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content and listing.user != request.user:
+            message = Message.objects.create(
+                sender=request.user,
+                receiver=listing.user,
+                listing=listing,
+                content=content
+            )
+            messages.success(request, 'Mesajul tău a fost trimis cu succes!')
+            
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+                
+            return redirect('marketplace:listing_detail', listing_id=listing_id)
+    
+    return redirect('marketplace:listing_detail', listing_id=listing_id)
 
 
 def favorites_view(request):
@@ -481,20 +626,169 @@ def favorites_view(request):
     return render(request, "marketplace/favorites.html", context)
 
 
+@login_required
+def toggle_favorite_view(request, listing_id):
+    """Toggle favorite status for a listing."""
+    from django.shortcuts import get_object_or_404
+    from django.http import JsonResponse
+    
+    if request.method == 'POST':
+        listing = get_object_or_404(Listing, id=listing_id)
+        
+        # Check if already favorited
+        favorite, created = Favorite.objects.get_or_create(
+            user=request.user,
+            listing=listing
+        )
+        
+        if not created:
+            # Already favorited, so remove it
+            favorite.delete()
+            is_favorited = False
+            message = "Anunțul a fost eliminat din favorite"
+        else:
+            is_favorited = True
+            message = "Anunțul a fost adăugat la favorite"
+        
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'is_favorited': is_favorited,
+                'message': message
+            })
+        
+        messages.success(request, message)
+        return redirect('marketplace:listing_detail', listing_id=listing_id)
+    
+    return JsonResponse({'success': False})
+
+
 def search_view(request):
-    """Search results page."""
+    """Enhanced search results page with advanced filtering including location-based distance."""
     query = request.GET.get('q', '')
+    category_id = request.GET.get('category', '')
+    min_price = request.GET.get('min_price', '')
+    max_price = request.GET.get('max_price', '')
+    location = request.GET.get('location', '')
+    sort_by = request.GET.get('sort', '-created_at')
+    enable_distance = request.GET.get('enable_distance', False)
+    distance = request.GET.get('distance', '10')
+    user_lat = request.GET.get('user_lat', '')
+    user_lng = request.GET.get('user_lng', '')
+    date_from = request.GET.get('date_from', '')
+    condition = request.GET.get('condition', '')
+    
     categories = Category.objects.all()
+    listings = Listing.objects.filter(status="active")
     
-    listings = Listing.objects.none()
-    
+    # Apply search query
     if query:
-        listings = Listing.objects.filter(
+        listings = listings.filter(
             Q(title__icontains=query) | 
             Q(description__icontains=query) |
-            Q(location__icontains=query),
-            status="active"
-        ).order_by("-created_at")
+            Q(location__icontains=query) |
+            Q(city__icontains=query) |
+            Q(address__icontains=query)
+        )
+    
+    # Apply category filter
+    if category_id:
+        try:
+            category = Category.objects.get(id=category_id)
+            # Include subcategories
+            category_ids = [category.id]
+            subcategories = Category.objects.filter(parent=category)
+            category_ids.extend(subcategories.values_list('id', flat=True))
+            listings = listings.filter(category_id__in=category_ids)
+        except Category.DoesNotExist:
+            pass
+    
+    # Apply price filters
+    if min_price:
+        try:
+            listings = listings.filter(price__gte=float(min_price))
+        except ValueError:
+            pass
+    
+    if max_price:
+        try:
+            listings = listings.filter(price__lte=float(max_price))
+        except ValueError:
+            pass
+    
+    # Apply date filter
+    if date_from:
+        try:
+            from datetime import datetime
+            date_obj = datetime.strptime(date_from, '%Y-%m-%d').date()
+            listings = listings.filter(created_at__date__gte=date_obj)
+        except ValueError:
+            pass
+    
+    # Apply condition filter (if you have a condition field on your model)
+    # if condition:
+    #     listings = listings.filter(condition=condition)
+    
+    # Apply location filter
+    if location and not enable_distance:
+        # Simple text-based location filter
+        listings = listings.filter(
+            Q(location__icontains=location) |
+            Q(city__icontains=location) |
+            Q(county__icontains=location)
+        )
+    
+    # Apply distance-based filtering
+    if enable_distance and user_lat and user_lng:
+        try:
+            from .models import Location
+            user_latitude = float(user_lat)
+            user_longitude = float(user_lng)
+            distance_km = float(distance)
+            
+            # Filter listings within the specified distance
+            nearby_listings = []
+            for listing in listings:
+                if listing.latitude and listing.longitude:
+                    distance_to_listing = Location.calculate_distance(
+                        user_latitude, user_longitude,
+                        float(listing.latitude), float(listing.longitude)
+                    )
+                    if distance_to_listing <= distance_km:
+                        # Add distance as an attribute for sorting/display
+                        listing._distance = distance_to_listing
+                        nearby_listings.append(listing)
+            
+            # Convert back to queryset with proper IDs
+            if nearby_listings:
+                listing_ids = [listing.id for listing in nearby_listings]
+                listings = Listing.objects.filter(id__in=listing_ids, status="active")
+                
+                # Store distance data for later use
+                distance_map = {listing.id: listing._distance for listing in nearby_listings}
+                request._distance_map = distance_map
+            else:
+                listings = Listing.objects.none()
+        
+        except (ValueError, TypeError):
+            pass
+    
+    # Apply sorting
+    if sort_by == 'price':
+        listings = listings.order_by('price')
+    elif sort_by == '-price':
+        listings = listings.order_by('-price')
+    elif sort_by == 'created_at':
+        listings = listings.order_by('created_at')
+    elif sort_by == 'title':
+        listings = listings.order_by('title')
+    elif sort_by == 'distance' and enable_distance and user_lat and user_lng:
+        # Sort by distance (if we have distance data)
+        if hasattr(request, '_distance_map'):
+            listings = list(listings)
+            listings.sort(key=lambda x: request._distance_map.get(x.id, float('inf')))
+    else:  # -created_at (default)
+        listings = listings.order_by('-created_at')
     
     # Handle pagination
     from django.core.paginator import Paginator
@@ -502,10 +796,29 @@ def search_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
+    # Add distance information to listings for display
+    if hasattr(request, '_distance_map'):
+        for listing in page_obj:
+            distance_km = request._distance_map.get(listing.id)
+            if distance_km is not None:
+                listing.distance_km = round(distance_km, 1)
+    
     context = {
-        "listings": page_obj,
+        "results": page_obj,
         "query": query,
         "categories": categories,
+        "selected_category": category_id,
+        "min_price": min_price,
+        "max_price": max_price,
+        "location": location,
+        "sort_by": sort_by,
+        "enable_distance": enable_distance,
+        "distance": distance,
+        "user_lat": user_lat,
+        "user_lng": user_lng,
+        "date_from": date_from,
+        "condition": condition,
+        "total_results": len(listings) if hasattr(request, '_distance_map') else listings.count(),
         "page_title": f"Căutare: {query}" if query else "Căutare",
     }
     
@@ -526,3 +839,407 @@ def register_view(request):
         form = UserCreationForm()
     
     return render(request, 'registration/register.html', {'form': form})
+
+
+@login_required
+def credits_dashboard(request):
+    """Credits dashboard showing balance and purchase options"""
+    user_profile = request.user.profile
+    credit_packages = CreditPackage.objects.filter(is_active=True).order_by('credits')
+    recent_transactions = CreditTransaction.objects.filter(user=request.user).order_by('-created_at')[:10]
+    
+    context = {
+        'user_profile': user_profile,
+        'credit_packages': credit_packages,
+        'recent_transactions': recent_transactions,
+        'promotion_cost': Decimal('0.50'),  # Cost to promote a listing
+    }
+    return render(request, 'marketplace/credits_cart.html', context)
+
+@login_required
+def buy_credits(request, package_id):
+    """Handle credit purchase via Stripe"""
+    try:
+        package = CreditPackage.objects.get(id=package_id, is_active=True)
+        user_profile = request.user.profile
+        
+        if request.method == 'POST':
+            try:
+                # Create Stripe payment intent
+                intent = stripe.PaymentIntent.create(
+                    amount=int(package.price_eur * 100),  # Stripe expects cents
+                    currency='eur',
+                    metadata={
+                        'user_id': request.user.id,
+                        'package_id': package.id,
+                        'credits': str(package.credits),
+                    }
+                )
+                
+                # Create payment record
+                payment = Payment.objects.create(
+                    user=request.user,
+                    amount=package.price_eur,
+                    payment_method='stripe',
+                    stripe_payment_intent_id=intent.id,
+                    status='pending'
+                )
+                
+                return JsonResponse({
+                    'client_secret': intent.client_secret,
+                    'payment_id': payment.id
+                })
+                
+            except stripe.error.StripeError as e:
+                return JsonResponse({'error': str(e)}, status=400)
+                
+        context = {
+            'package': package,
+            'user_profile': user_profile,
+            'stripe_public_key': settings.STRIPE_PUBLISHABLE_KEY,
+        }
+        return render(request, 'marketplace/buy_credits.html', context)
+        
+    except CreditPackage.DoesNotExist:
+        messages.error(request, "Pachetul de credite nu există.")
+        return redirect('credits_dashboard')
+
+@login_required
+def payment_success(request):
+    """Handle successful payment and add credits to user"""
+    session_id = request.GET.get('session_id')
+    
+    if session_id:
+        try:
+            import stripe
+            from django.conf import settings
+            import json
+            
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            
+            # Retrieve the checkout session
+            session = stripe.checkout.Session.retrieve(session_id)
+            
+            if session.payment_status == 'paid':
+                # Get metadata from session
+                user_id = session.metadata.get('user_id')
+                total_credits = int(session.metadata.get('total_credits', 0))
+                cart_data = json.loads(session.metadata.get('cart_data', '[]'))
+                currency = session.metadata.get('currency', 'ron')
+                
+                # Verify user
+                if str(request.user.id) != user_id:
+                    messages.error(request, "Sesiunea de plată nu corespunde cu utilizatorul curent.")
+                    return redirect('marketplace:buy_credits')
+                
+                # Add credits to user profile
+                user_profile = request.user.profile
+                user_profile.credits += total_credits
+                user_profile.save()
+                
+                # Create transaction records for each item in cart
+                for item in cart_data:
+                    credits = item['credits']
+                    quantity = item['quantity']
+                    price = item['priceEur'] if currency == 'eur' else item['priceRon']
+                    
+                    for i in range(quantity):
+                        CreditTransaction.objects.create(
+                            user=request.user,
+                            transaction_type='purchase',
+                            amount=credits,
+                            description=f"Achiziție {credits} credite ({price} {currency.upper()})",
+                            reference=session_id
+                        )
+                
+                messages.success(request, f"🎉 Felicitări! Ai primit {total_credits} credite în cont. Plata a fost procesată cu succes!")
+                return render(request, 'marketplace/payment_success.html', {
+                    'total_credits': total_credits,
+                    'session_id': session_id,
+                    'cart_data': cart_data,
+                    'currency': currency.upper()
+                })
+                
+        except Exception as e:
+            messages.error(request, f"A apărut o eroare la procesarea plății: {str(e)}")
+    
+    messages.error(request, "Sesiunea de plată nu a fost găsită sau este invalidă.")
+    return redirect('marketplace:buy_credits')
+
+@login_required
+def promote_listing(request, listing_id):
+    """Promote a listing to first page for 0.5 credits"""
+    try:
+        listing = Listing.objects.get(id=listing_id, user=request.user)
+        user_profile = request.user.profile
+        promotion_cost = Decimal('0.50')
+        
+        if request.method == 'POST':
+            if user_profile.can_promote_listing():
+                # Deduct credits
+                if user_profile.deduct_credits(promotion_cost):
+                    # Create listing boost
+                    boost = ListingBoost.objects.create(
+                        listing=listing,
+                        user=request.user,
+                        boost_type='featured',
+                        credits_cost=promotion_cost,
+                        expires_at=timezone.now() + timezone.timedelta(days=7)  # Featured for 7 days
+                    )
+                    
+                    # Mark listing as featured
+                    listing.is_featured = True
+                    listing.save()
+                    
+                    # Create transaction record
+                    CreditTransaction.objects.create(
+                        user=request.user,
+                        transaction_type='promotion',
+                        amount=promotion_cost,
+                        description=f"Promovare anunț: {listing.title}"
+                    )
+                    
+                    messages.success(request, f"Anunțul '{listing.title}' a fost promovat cu succes! Va apărea pe prima pagină timp de 7 zile.")
+                    return JsonResponse({'success': True, 'redirect_url': reverse('listing_detail', kwargs={'slug': listing.slug})})
+                else:
+                    return JsonResponse({'error': 'Eroare la procesarea creditelor.'}, status=400)
+            else:
+                return JsonResponse({'error': f'Nu ai suficiente credite. Ai nevoie de {promotion_cost} credite.'}, status=400)
+        
+        context = {
+            'listing': listing,
+            'promotion_cost': promotion_cost,
+            'user_credits': user_profile.credits_balance
+        }
+        return render(request, 'marketplace/promote_listing.html', context)
+        
+    except Listing.DoesNotExist:
+        messages.error(request, "Anunțul nu există sau nu îți aparține.")
+        return redirect('profile')
+
+@login_required
+def credits_history(request):
+    """View credit transaction history"""
+    transactions = CreditTransaction.objects.filter(user=request.user).order_by('-created_at')
+    
+    context = {
+        'transactions': transactions,
+        'user_profile': request.user.profile
+    }
+    return render(request, 'marketplace/credits_history.html', context)
+
+
+@login_required
+def process_payment_view(request):
+    """Process Stripe payment for credits from shopping cart."""
+    if request.method == 'POST':
+        import json
+        import stripe
+        from django.conf import settings
+        
+        try:
+            # Get cart data from the form
+            cart_data = json.loads(request.POST.get('cart_data', '[]'))
+            currency = request.POST.get('currency', 'ron')
+            
+            if not cart_data:
+                messages.error(request, 'Coșul este gol.')
+                return redirect('marketplace:buy_credits')
+            
+            stripe.api_key = settings.STRIPE_SECRET_KEY
+            
+            # Calculate totals and prepare line items
+            line_items = []
+            total_credits = 0
+            
+            for item in cart_data:
+                credits = item['credits']
+                quantity = item['quantity']
+                price = item['priceEur'] if currency == 'eur' else item['priceRon']
+                
+                total_credits += credits * quantity
+                
+                line_items.append({
+                    'price_data': {
+                        'currency': currency,
+                        'product_data': {
+                            'name': f'{credits} Credite Piata.ro',
+                            'description': f'Pachet cu {credits} credite pentru promovarea anunțurilor',
+                        },
+                        'unit_amount': price * 100,  # Convert to cents
+                    },
+                    'quantity': quantity,
+                })
+            
+            # Create Stripe checkout session
+            checkout_session = stripe.checkout.Session.create(
+                payment_method_types=['card'],
+                line_items=line_items,
+                mode='payment',
+                success_url=request.build_absolute_uri('/') + 'credite/succes/?session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=request.build_absolute_uri('/') + 'credite/',
+                metadata={
+                    'user_id': request.user.id,
+                    'total_credits': total_credits,
+                    'cart_data': json.dumps(cart_data),
+                    'currency': currency,
+                }
+            )
+            
+            return redirect(checkout_session.url)
+            
+        except Exception as e:
+            messages.error(request, f'Eroare la procesarea plății: {str(e)}')
+            return redirect('marketplace:buy_credits')
+    
+    return redirect('marketplace:buy_credits')
+
+
+@login_required
+def promote_listing_view(request, listing_id):
+    """Promote a listing to first page."""
+    try:
+        listing = Listing.objects.get(id=listing_id, user=request.user)
+    except Listing.DoesNotExist:
+        messages.error(request, 'Anunțul nu a fost găsit sau nu îți aparține.')
+        return redirect('marketplace:profile')
+    
+    if request.method == 'POST':
+        form = PromoteListingForm(request.POST)
+        if form.is_valid():
+            duration_days = int(form.cleaned_data['duration_days'])
+            credits_needed = duration_days * 0.5
+            
+            user_profile = request.user.profile
+            
+            if user_profile.credits >= credits_needed:
+                # Deduct credits
+                user_profile.credits -= Decimal(str(credits_needed))
+                user_profile.save()
+                
+                # Set promotion
+                from datetime import timedelta
+                listing.is_promoted = True
+                listing.promoted_until = timezone.now() + timedelta(days=duration_days)
+                listing.save()
+                
+                messages.success(request, f'Anunțul a fost promovat cu succes pentru {duration_days} zi(le)!')
+                return redirect('marketplace:listing_detail', listing_id=listing.id)
+            else:
+                messages.error(request, 'Nu ai suficiente credite pentru această promovare.')
+                return redirect('marketplace:buy_credits')
+    else:
+        form = PromoteListingForm(initial={'listing_id': listing_id})
+    
+    return render(request, 'marketplace/promote_listing.html', {
+        'form': form,
+        'listing': listing,
+    })
+
+
+# Legal Pages Views
+def terms_of_service_view(request):
+    """Terms of Service page."""
+    return render(request, 'marketplace/legal/terms_of_service.html')
+
+
+def privacy_policy_view(request):
+    """Privacy Policy page."""
+    return render(request, 'marketplace/legal/privacy_policy.html')
+
+
+def contact_view(request):
+    """Contact page with contact form."""
+    if request.method == 'POST':
+        # Handle contact form submission
+        name = request.POST.get('name')
+        email = request.POST.get('email')
+        subject = request.POST.get('subject')
+        message = request.POST.get('message')
+        
+        # Here you would typically send an email or save to database
+        # For now, just show a success message
+        messages.success(request, 'Mesajul tău a fost trimis cu succes! Îți vom răspunde în cel mai scurt timp.')
+        return redirect('marketplace:contact')
+    
+    return render(request, 'marketplace/legal/contact.html')
+
+
+def about_view(request):
+    """About Us page."""
+    return render(request, 'marketplace/legal/about.html')
+
+
+def help_view(request):
+    """Help/FAQ page."""
+    return render(request, 'marketplace/legal/help.html')
+
+
+@login_required
+def report_listing_view(request, listing_id):
+    """Handle listing reports via AJAX."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Method not allowed'}, status=405)
+    
+    try:
+        listing = Listing.objects.get(id=listing_id)
+    except Listing.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Anunțul nu a fost găsit'}, status=404)
+    
+    # Check if user already reported this listing
+    if ListingReport.objects.filter(listing=listing, reporter=request.user).exists():
+        return JsonResponse({'success': False, 'message': 'Ați raportat deja acest anunț'})
+    
+    # Users cannot report their own listings
+    if listing.user == request.user:
+        return JsonResponse({'success': False, 'message': 'Nu puteți raporta propriul anunț'})
+    
+    reason = request.POST.get('reason')
+    comment = request.POST.get('comment', '')
+    
+    if not reason:
+        return JsonResponse({'success': False, 'message': 'Vă rugăm să selectați un motiv'})
+    
+    # Create the report
+    report = ListingReport.objects.create(
+        listing=listing,
+        reporter=request.user,
+        reason=reason,
+        comment=comment
+    )
+    
+    return JsonResponse({
+        'success': True, 
+        'message': 'Raportul a fost trimis cu succes. Vă mulțumim pentru feedback!'
+    })
+
+
+def public_profile_view(request, username):
+    """Public profile view for any user."""
+    try:
+        profile_user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        messages.error(request, 'Utilizatorul nu a fost găsit.')
+        return redirect('marketplace:home')
+    
+    # Get user's active listings
+    user_listings = Listing.objects.filter(
+        user=profile_user, 
+        status='active'
+    ).order_by('-created_at')
+    
+    # Get user profile
+    try:
+        user_profile = profile_user.profile
+    except:
+        # Create profile if it doesn't exist
+        user_profile = UserProfile.objects.create(user=profile_user)
+    
+    context = {
+        'profile_user': profile_user,
+        'user_profile': user_profile,
+        'user_listings': user_listings,
+        'page_title': f'Profilul lui {profile_user.username}',
+    }
+    
+    return render(request, 'marketplace/public_profile.html', context)

@@ -30,19 +30,64 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content -->
         <div class="lg:col-span-2">
-            <!-- Images -->
+            <!-- Image Gallery -->
             <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-                <div class="h-96 bg-gray-200 relative">
-                    {% if listing.image %}
-                    <img src="{{ listing.image.url }}" alt="{{ listing.title }}" 
-                         class="w-full h-full object-cover">
-                    {% else %}
-                    <div class="w-full h-full flex items-center justify-center text-gray-400">
-                        <i class="fas fa-image text-6xl"></i>
-                        <span class="ml-4 text-xl">Nu există imagine</span>
+                {% if listing.images.all %}
+                    <!-- Main Image Display -->
+                    <div class="h-96 bg-gray-200 relative">
+                        {% if listing.main_image %}
+                        <img id="main-image" 
+                             src="{{ listing.main_image.image.url }}" 
+                             alt="{{ listing.title }}" 
+                             class="w-full h-full object-cover cursor-pointer"
+                             onclick="openImageModal(this.src)">
+                        {% else %}
+                        <!-- Fallback if no main image -->
+                        <img id="main-image" 
+                             src="{{ listing.images.first.image.url }}" 
+                             alt="{{ listing.title }}" 
+                             class="w-full h-full object-cover cursor-pointer"
+                             onclick="openImageModal(this.src)">
+                        {% endif %}
+                        
+                        <!-- Image Counter -->
+                        <div class="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-2 py-1 rounded text-sm">
+                            <span id="current-image">1</span> / {{ listing.images.count }}
+                        </div>
+                        
+                        <!-- Navigation Arrows (if multiple images) -->
+                        {% if listing.images.count > 1 %}
+                        <button onclick="previousImage()" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-all">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button onclick="nextImage()" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75 transition-all">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Thumbnail Gallery -->
+                    {% if listing.images.count > 1 %}
+                    <div class="p-4 bg-gray-50">
+                        <div class="flex space-x-2 overflow-x-auto">
+                            {% for image in listing.images.all %}
+                            <img src="{{ image.image.url }}" 
+                                 alt="Thumbnail {{ forloop.counter }}"
+                                 class="w-20 h-20 object-cover rounded cursor-pointer border-2 {% if forloop.first %}border-primary{% else %}border-transparent{% endif %} hover:border-primary transition-all thumbnail"
+                                 onclick="setMainImage('{{ image.image.url }}', {{ forloop.counter }}, this)"
+                                 data-index="{{ forloop.counter }}">
+                            {% endfor %}
+                        </div>
                     </div>
                     {% endif %}
-                </div>
+                {% else %}
+                    <div class="h-96 bg-gray-200 relative flex items-center justify-center text-gray-400">
+                        <div class="text-center">
+                            <i class="fas fa-image text-6xl mb-4"></i>
+                            <p class="text-xl">Nu există imagini</p>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
 
             <!-- Listing Details -->
@@ -85,21 +130,43 @@
                 <div class="mt-8 pt-6 border-t border-gray-200">
                     <div class="flex flex-wrap gap-4">
                         {% if user.is_authenticated %}
-                            <button class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                            {% if listing.user != user %}
+                            <button onclick="openMessageModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
                                 <i class="fas fa-envelope mr-2"></i>Trimite mesaj
                             </button>
-                            <button class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center">
-                                <i class="fas fa-phone mr-2"></i>Afișează telefon
+                            {% endif %}
+                            <button id="show-phone-btn" onclick="showPhone()" class="bg-accent text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors flex items-center">
+                                <i class="fas fa-phone mr-2"></i>
+                                <span id="phone-text">Afișează telefon</span>
                             </button>
-                            <button class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
-                                <i class="fas fa-heart mr-2"></i>Adaugă la favorite
+                            <div id="phone-display" class="hidden bg-green-100 text-green-800 px-6 py-3 rounded-lg flex items-center">
+                                <i class="fas fa-phone mr-2"></i>
+                                <span id="phone-number">
+                                    {% if listing.user.profile.phone and listing.user.profile.phone|length > 0 %}
+                                        {{ listing.user.profile.phone }}
+                                    {% else %}
+                                        Nu este disponibil
+                                        <!-- Debug info: Profile exists: {{ listing.user.profile|yesno:"Yes,No" }}, Phone value: "{{ listing.user.profile.phone }}" -->
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <button id="favoriteBtn" onclick="toggleFavorite()" 
+                                    class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                                <i id="favoriteIcon" class="fas fa-heart mr-2"></i>
+                                <span id="favoriteText">
+                                    {% if user in listing.favorited_by.all %}
+                                        Elimină din favorite
+                                    {% else %}
+                                        Adaugă la favorite
+                                    {% endif %}
+                                </span>
                             </button>
                         {% else %}
-                            <a href="/admin/login/" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                            <a href="{% url 'account_login' %}" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center">
                                 <i class="fas fa-sign-in-alt mr-2"></i>Conectează-te pentru a contacta
                             </a>
                         {% endif %}
-                        <button class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
+                        <button onclick="shareListing()" class="border border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors flex items-center">
                             <i class="fas fa-share mr-2"></i>Partajează
                         </button>
                     </div>
@@ -140,7 +207,7 @@
                     <button class="w-full bg-primary text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-envelope mr-2"></i>Trimite mesaj
                     </button>
-                    <button class="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+                    <button onclick="viewProfile('{{ listing.user.username }}')" class="w-full border border-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-50 transition-colors">
                         <i class="fas fa-user mr-2"></i>Vezi profilul
                     </button>
                 </div>
@@ -170,17 +237,78 @@
                 </div>
             </div>
 
-            <!-- Location Map -->
+            <!-- Location Information -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">
                     <i class="fas fa-map-marker-alt mr-2"></i>Locație
                 </h3>
-                <div class="text-gray-700 mb-4">{{ listing.location }}</div>
-                <div class="h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                
+                <!-- Location Details -->
+                <div class="space-y-2 mb-4">
+                    {% if listing.address %}
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-road mr-2"></i>
+                            <span>{{ listing.address }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="flex items-center text-sm text-gray-600">
+                        <i class="fas fa-map-marker-alt mr-2"></i>
+                        <span>{{ listing.location }}</span>
+                    </div>
+                    
+                    {% if listing.city %}
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-city mr-2"></i>
+                            <span>{{ listing.city }}{% if listing.county %}, {{ listing.county }}{% endif %}</span>
+                        </div>
+                    {% endif %}
+                    
+                    {% if listing.country %}
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-flag mr-2"></i>
+                            <span>{{ listing.country }}</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Interactive Map -->
+                {% if listing.latitude and listing.longitude %}
+                    <div id="listing-map" class="h-48 bg-gray-200 rounded-lg mb-4" 
+                         data-lat="{{ listing.latitude }}" 
+                         data-lng="{{ listing.longitude }}"
+                         data-title="{{ listing.title|escapejs }}">
+                    </div>
+                    
+                    <!-- Map Controls -->
+                    <div class="flex justify-between items-center text-sm">
+                        <button onclick="toggleMapSize()" class="text-primary hover:text-blue-700">
+                            <i class="fas fa-expand mr-1"></i>Mărește harta
+                        </button>
+                        <button onclick="getDirections()" class="text-primary hover:text-blue-700">
+                            <i class="fas fa-route mr-1"></i>Obține direcții
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="h-48 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <div class="text-center text-gray-500">
+                            <i class="fas fa-map text-3xl mb-2"></i>
+                            <div>Locația nu este disponibilă pe hartă</div>
+                            <div class="text-sm">Coordonatele nu au fost stabilite</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Nearby Listings -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-compass mr-2"></i>Anunțuri din apropiere
+                </h3>
+                <div id="nearby-listings" class="space-y-3">
                     <div class="text-center text-gray-500">
-                        <i class="fas fa-map text-3xl mb-2"></i>
-                        <div>Hartă locație</div>
-                        <div class="text-sm">(Va fi implementată)</div>
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Se încarcă anunțurile din apropiere...
                     </div>
                 </div>
             </div>
@@ -188,7 +316,7 @@
             <!-- Report Ad -->
             <div class="bg-white rounded-lg shadow-md p-6">
                 <div class="text-center">
-                    <button class="text-red-600 hover:text-red-800 text-sm">
+                    <button onclick="reportListing()" class="text-red-600 hover:text-red-800 text-sm">
                         <i class="fas fa-flag mr-2"></i>Raportează anunțul
                     </button>
                 </div>
@@ -237,17 +365,627 @@
     {% endif %}
 </div>
 
+<!-- Message Modal -->
+<div id="messageModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-envelope mr-2 text-primary"></i>Trimite mesaj
+            </h3>
+            <button onclick="closeMessageModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-2">Către: <strong>{{ listing.user.username }}</strong></p>
+            <p class="text-sm text-gray-600">Despre: <strong>{{ listing.title }}</strong></p>
+        </div>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Mesajul tău:</label>
+            <textarea id="messageContent" 
+                      placeholder="Scrie mesajul tău aici..." 
+                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                      rows="4"></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeMessageModal()" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Anulează
+            </button>
+            <button onclick="sendMessage()" 
+                    class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-paper-plane mr-2"></i>Trimite
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div id="reportModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">
+                <i class="fas fa-flag mr-2 text-red-600"></i>Raportează anunțul
+            </h3>
+            <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-sm text-gray-600 mb-4">De ce raportezi acest anunț?</p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Motiv:</label>
+                <select id="reportReason" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                    <option value="">Selectează un motiv</option>
+                    <option value="spam">Spam sau anunț duplicat</option>
+                    <option value="inappropriate">Conținut nepotrivit</option>
+                    <option value="fake">Anunț fals</option>
+                    <option value="price">Preț incorect sau înșelător</option>
+                    <option value="contact">Informații de contact false</option>
+                    <option value="copyright">Încălcarea drepturilor de autor</option>
+                    <option value="other">Altul</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Comentarii suplimentare (opțional):</label>
+                <textarea id="reportComment" 
+                          placeholder="Descrie problema în detaliu..." 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          rows="3"></textarea>
+            </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+            <button onclick="closeReportModal()" 
+                    class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                Anulează
+            </button>
+            <button onclick="submitReport()" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                <i class="fas fa-flag mr-2"></i>Raportează
+            </button>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+
 {% block extra_js %}
+<!-- Leaflet JavaScript for maps -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
 <script>
-// Contact functionality (placeholder)
-document.addEventListener('DOMContentLoaded', function() {
-    // Add event listeners for contact buttons
-    const messageBtn = document.querySelector('button[data-action="message"]');
-    const phoneBtn = document.querySelector('button[data-action="phone"]');
-    const favoriteBtn = document.querySelector('button[data-action="favorite"]');
+// Phone display functionality
+function showPhone() {
+    const phoneBtn = document.getElementById('show-phone-btn');
+    const phoneDisplay = document.getElementById('phone-display');
     
-    // These would integrate with your backend APIs
+    // Show the phone display
+    phoneDisplay.classList.remove('hidden');
+    
+    // Hide the button
+    phoneBtn.classList.add('hidden');
+}
+
+// Profile viewing functionality
+function viewProfile(username) {
+    // Redirect to user's public profile page
+    window.location.href = `/utilizator/${username}/`;
+}
+
+// Share listing functionality
+function shareListing() {
+    const currentUrl = window.location.href;
+    const listingTitle = "{{ listing.title|escapejs }}";
+    
+    // Check if the Web Share API is supported
+    if (navigator.share) {
+        navigator.share({
+            title: listingTitle,
+            text: `Verifică acest anunț: ${listingTitle}`,
+            url: currentUrl
+        }).catch(err => {
+            console.log('Error sharing:', err);
+            // Fallback to copy to clipboard
+            copyToClipboard(currentUrl);
+        });
+    } else {
+        // Fallback: copy URL to clipboard
+        copyToClipboard(currentUrl);
+    }
+}
+
+// Copy to clipboard functionality
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function() {
+            showNotification('Link-ul a fost copiat în clipboard!', 'success');
+        }).catch(function(err) {
+            console.error('Could not copy text: ', err);
+            fallbackCopyTextToClipboard(text);
+        });
+    } else {
+        fallbackCopyTextToClipboard(text);
+    }
+}
+
+// Fallback copy to clipboard for older browsers
+function fallbackCopyTextToClipboard(text) {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    
+    // Avoid scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed";
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showNotification('Link-ul a fost copiat în clipboard!', 'success');
+        } else {
+            showNotification('Nu s-a putut copia link-ul. Încercați din nou.', 'error');
+        }
+    } catch (err) {
+        console.error('Fallback: Oops, unable to copy', err);
+        showNotification('Nu s-a putut copia link-ul. Încercați din nou.', 'error');
+    }
+    
+    document.body.removeChild(textArea);
+}
+
+// Report listing functionality
+function reportListing() {
+    if (!{{ user.is_authenticated|yesno:"true,false" }}) {
+        showNotification('Trebuie să fiți conectat pentru a raporta un anunț.', 'error');
+        return;
+    }
+    
+    const listingId = {{ listing.id }};
+    const modal = document.getElementById('reportModal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close report modal
+function closeReportModal() {
+    const modal = document.getElementById('reportModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+    
+    // Reset form
+    document.getElementById('reportReason').value = '';
+    document.getElementById('reportComment').value = '';
+}
+
+// Submit report
+function submitReport() {
+    const reason = document.getElementById('reportReason').value;
+    const comment = document.getElementById('reportComment').value;
+    
+    if (!reason) {
+        showNotification('Vă rugăm să selectați un motiv pentru raportare.', 'error');
+        return;
+    }
+    
+    const listingId = {{ listing.id }};
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    
+    fetch('{% url "marketplace:report_listing" listing.id %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken
+        },
+        body: new URLSearchParams({
+            'reason': reason,
+            'comment': comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Raportul a fost trimis cu succes. Vă mulțumim!', 'success');
+            closeReportModal();
+        } else {
+            showNotification(data.message || 'A apărut o eroare. Încercați din nou.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('A apărut o eroare. Încercați din nou.', 'error');
+    });
+}
+
+// Notification system
+function showNotification(message, type = 'info') {
+    // Remove any existing notifications
+    const existingNotification = document.getElementById('notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'notification';
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${getNotificationClasses(type)}`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas ${getNotificationIcon(type)} mr-2"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-lg font-bold hover:opacity-70">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+function getNotificationClasses(type) {
+    switch (type) {
+        case 'success':
+            return 'bg-green-500 text-white';
+        case 'error':
+            return 'bg-red-500 text-white';
+        case 'warning':
+            return 'bg-yellow-500 text-white';
+        default:
+            return 'bg-blue-500 text-white';
+    }
+}
+
+function getNotificationIcon(type) {
+    switch (type) {
+        case 'success':
+            return 'fa-check-circle';
+        case 'error':
+            return 'fa-exclamation-circle';
+        case 'warning':
+            return 'fa-exclamation-triangle';
+        default:
+            return 'fa-info-circle';
+    }
+}
+
+// Image Gallery Functions
+let currentImageIndex = 1;
+const totalImages = {{ listing.images.count }};
+
+function setMainImage(imageUrl, index, thumbnailElement) {
+    const mainImage = document.getElementById('main-image');
+    const currentImageSpan = document.getElementById('current-image');
+    
+    // Update main image
+    mainImage.src = imageUrl;
+    
+    // Update counter
+    currentImageIndex = index;
+    currentImageSpan.textContent = index;
+    
+    // Update thumbnail borders
+    document.querySelectorAll('.thumbnail').forEach(thumb => {
+        thumb.classList.remove('border-primary');
+        thumb.classList.add('border-transparent');
+    });
+    thumbnailElement.classList.add('border-primary');
+    thumbnailElement.classList.remove('border-transparent');
+}
+
+function nextImage() {
+    if (currentImageIndex < totalImages) {
+        currentImageIndex++;
+    } else {
+        currentImageIndex = 1;
+    }
+    
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    const nextThumbnail = thumbnails[currentImageIndex - 1];
+    setMainImage(nextThumbnail.src, currentImageIndex, nextThumbnail);
+}
+
+function previousImage() {
+    if (currentImageIndex > 1) {
+        currentImageIndex--;
+    } else {
+        currentImageIndex = totalImages;
+    }
+    
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    const prevThumbnail = thumbnails[currentImageIndex - 1];
+    setMainImage(prevThumbnail.src, currentImageIndex, prevThumbnail);
+}
+
+function openImageModal(imageSrc) {
+    const modal = document.getElementById('imageModal');
+    const modalImage = document.getElementById('modalImage');
+    modalImage.src = imageSrc;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+    const modal = document.getElementById('imageModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = 'auto';
+}
+
+// Keyboard navigation for image gallery
+document.addEventListener('keydown', function(e) {
+    if (totalImages > 1) {
+        if (e.key === 'ArrowLeft') {
+            previousImage();
+        } else if (e.key === 'ArrowRight') {
+            nextImage();
+        }
+    }
+    
+    // Close modal with Escape key
+    if (e.key === 'Escape') {
+        closeImageModal();
+    }
 });
+
+// Location and Map functionality
+let map = null;
+let isMapExpanded = false;
+
+// Function to cleanup existing map
+function cleanupMap() {
+    if (map !== null) {
+        console.log('Cleaning up existing map');
+        map.remove();
+        map = null;
+    }
+}
+
+// Initialize map when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing page components');
+    cleanupMap(); // Ensure no existing map
+    initializeMap();
+    loadNearbyListings();
+});
+
+// Cleanup map when page is unloaded
+window.addEventListener('beforeunload', function() {
+    cleanupMap();
+});
+
+function initializeMap() {
+    // Prevent multiple map initializations
+    if (map !== null) {
+        console.log('Map already initialized, skipping...');
+        return;
+    }
+    
+    const mapElement = document.getElementById('listing-map');
+    if (!mapElement) {
+        console.log('Map element not found');
+        return;
+    }
+    
+    const lat = parseFloat(mapElement.dataset.lat);
+    const lng = parseFloat(mapElement.dataset.lng);
+    const title = mapElement.dataset.title;
+    
+    if (isNaN(lat) || isNaN(lng)) {
+        console.log('Invalid coordinates:', lat, lng);
+        return;
+    }
+    
+    console.log('Initializing map with coordinates:', lat, lng);
+    
+    try {
+        // Initialize the map
+        map = L.map('listing-map').setView([lat, lng], 15);
+        
+        // Add OpenStreetMap tiles
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Add marker for the listing
+        const marker = L.marker([lat, lng]).addTo(map);
+        marker.bindPopup(`<b>${title}</b><br>Locația anunțului`);
+        
+        // Disable map interaction by default to prevent scroll conflicts
+        map.scrollWheelZoom.disable();
+        map.on('click', function() {
+            map.scrollWheelZoom.enable();
+            showNotification('Harta este acum activă pentru navigare', 'info');
+        });
+        
+        console.log('Map initialized successfully');
+    } catch (error) {
+        console.error('Error initializing map:', error);
+    }
+}
+
+function toggleMapSize() {
+    if (!map) {
+        console.log('No map available to toggle');
+        return;
+    }
+    
+    const mapElement = document.getElementById('listing-map');
+    const toggleBtn = document.querySelector('[onclick="toggleMapSize()"]');
+    
+    if (!mapElement || !toggleBtn) {
+        console.log('Map element or toggle button not found');
+        return;
+    }
+    
+    if (!isMapExpanded) {
+        mapElement.classList.add('map-fullscreen');
+        toggleBtn.innerHTML = '<i class="fas fa-compress mr-1"></i>Micșorează harta';
+        isMapExpanded = true;
+    } else {
+        mapElement.classList.remove('map-fullscreen');
+        toggleBtn.innerHTML = '<i class="fas fa-expand mr-1"></i>Mărește harta';
+        isMapExpanded = false;
+    }
+    
+    // Refresh map size after a short delay
+    setTimeout(() => {
+        if (map) {
+            map.invalidateSize();
+            console.log('Map size invalidated');
+        }
+    }, 100);
+}
+
+function getDirections() {
+    const mapElement = document.getElementById('listing-map');
+    if (!mapElement) return;
+    
+    const lat = mapElement.dataset.lat;
+    const lng = mapElement.dataset.lng;
+    
+    // Open Google Maps with directions
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+    window.open(url, '_blank');
+}
+
+function loadNearbyListings() {
+    const listingId = {{ listing.id }};
+    const nearbyContainer = document.getElementById('nearby-listings');
+    
+    if (!nearbyContainer) return;
+    
+    fetch(`/api/listings/${listingId}/nearby/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.results && data.results.length > 0) {
+                displayNearbyListings(data.results);
+            } else {
+                nearbyContainer.innerHTML = `
+                    <div class="text-center text-gray-500 py-4">
+                        <i class="fas fa-search text-2xl mb-2"></i>
+                        <div>Nu au fost găsite anunțuri în apropiere</div>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading nearby listings:', error);
+            nearbyContainer.innerHTML = `
+                <div class="text-center text-red-500 py-4">
+                    <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                    <div>Eroare la încărcarea anunțurilor din apropiere</div>
+                </div>
+            `;
+        });
+}
+
+function displayNearbyListings(listings) {
+    const container = document.getElementById('nearby-listings');
+    
+    const html = listings.map(listing => `
+        <div class="nearby-listing-item border border-gray-200 rounded-lg p-3 hover:bg-gray-50">
+            <div class="flex items-center space-x-3">
+                <div class="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
+                    ${listing.main_image ? 
+                        `<img src="${listing.main_image}" alt="${listing.title}" class="w-full h-full object-cover">` :
+                        `<div class="w-full h-full flex items-center justify-center">
+                            <i class="fas fa-image text-gray-400"></i>
+                        </div>`
+                    }
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="font-medium text-gray-800 truncate">
+                        <a href="/anunt/${listing.id}/" class="hover:text-primary">
+                            ${listing.title}
+                        </a>
+                    </h4>
+                    <div class="text-sm text-gray-600 flex items-center mt-1">
+                        <i class="fas fa-map-marker-alt mr-1"></i>
+                        ${listing.distance ? `${listing.distance.toFixed(1)} km` : 'Distanță necunoscută'}
+                    </div>
+                    <div class="text-lg font-semibold text-primary mt-1">
+                        ${listing.price} ${listing.currency ? listing.currency.toUpperCase() : 'RON'}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+    
+    container.innerHTML = html;
+}
 </script>
 {% endblock %}
+
+<!-- Image Modal -->
+<div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center">
+    <div class="relative max-w-4xl max-h-full p-4">
+        <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300 z-10">
+            <i class="fas fa-times"></i>
+        </button>
+        <img id="modalImage" src="" alt="Image" class="max-w-full max-h-full object-contain">
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet CSS for maps -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+<style>
+.leaflet-container {
+    font-family: inherit !important;
+    z-index: 1;
+}
+.map-fullscreen {
+    height: 400px !important;
+    position: relative;
+    z-index: 2;
+}
+.nearby-listing-item {
+    transition: all 0.2s ease;
+}
+.nearby-listing-item:hover {
+    transform: translateX(4px);
+}
+
+/* Ensure only one map instance */
+#listing-map {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Prevent map duplication */
+#listing-map .leaflet-container:not(:first-child) {
+    display: none !important;
+}
+
+/* Loading state for maps */
+#listing-map:empty::before {
+    content: "Încărcare hartă...";
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #6b7280;
+    font-size: 14px;
+}
+</style>
 {% endblock %}

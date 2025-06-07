@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Favorite, Listing, Message, UserProfile
+from .models import Category, Favorite, Listing, Message, UserProfile, ListingReport
 
 
 @admin.register(Category)
@@ -44,6 +44,34 @@ class FavoriteAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "location", "is_premium", "premium_until")
+    list_display = ("user", "phone", "location", "is_premium", "premium_until")
     list_filter = ("is_premium",)
-    search_fields = ("user__username", "user__email", "location")
+    search_fields = ("user__username", "user__email", "phone", "location")
+
+
+@admin.register(ListingReport)
+class ListingReportAdmin(admin.ModelAdmin):
+    list_display = ("id", "listing", "reporter", "reason", "status", "created_at")
+    list_filter = ("reason", "status", "created_at")
+    search_fields = ("listing__title", "reporter__username", "comment")
+    date_hierarchy = "created_at"
+    readonly_fields = ("created_at",)
+
+    fieldsets = (
+        (None, {"fields": ("listing", "reporter", "reason", "comment")}),
+        (
+            "Status",
+            {"fields": ("status", "reviewed_by", "reviewed_at", "notes")},
+        ),
+        ("Timestamps", {"fields": ("created_at",)}),
+    )
+
+    def save_model(self, request, obj, form, change):
+        if change and obj.status in ["reviewed", "resolved", "dismissed"]:
+            if not obj.reviewed_by:
+                obj.reviewed_by = request.user
+            if not obj.reviewed_at:
+                from django.utils import timezone
+
+                obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)
