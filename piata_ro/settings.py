@@ -35,6 +35,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['0.0.0.0', 'localhost', '127.0.0.1']
 
+# Django Debug Toolbar
+INTERNAL_IPS = [
+    '127.0.0.1',
+]
+
 # PraisonAI Configuration
 PRAISONAI_CONFIG = {
     'auto': True,  # Auto-configure LLM
@@ -74,6 +79,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'debug_toolbar',
     
     # Local apps
     'api',
@@ -83,6 +89,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

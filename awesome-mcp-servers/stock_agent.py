@@ -1,406 +1,636 @@
 """
 Stock Agent for Piata.ro Project
-An agent that uses the MCP server to interact with marketplace data and provide intelligent responses.
+An MCP server that provides real database operations for marketplace stock and analytics.
 """
 
-import asyncio
-import json
 import os
+import sys
+import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime, timedelta
-import argparse # Added for command-line arguments
+from pathlib import Path
 
-import httpx
-from dotenv import load_dotenv
-from fastmcp import FastMCP # Added for MCP server functionality
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
-# Load environment variables
-load_dotenv()
+# Setup Django environment
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'piata_ro.settings')
 
-# Initialize FastMCP server for stock agent
-mcp = FastMCP("Piața.ro Stock Agent") # Changed from PiataRoAgent to mcp
+import django
+from django.conf import settings
+django.setup()
 
-class PiataRoStockAgent: # Renamed class for clarity
-    """Agent for interacting with Piata.ro marketplace through MCP server"""
-    
-    def __init__(self, mcp_server_url: str = "http://localhost:8080"): # This might need adjustment if the agent itself is an MCP server
-        """
-        Initialize the agent with MCP server connection details.
+from django.contrib.auth.models import User
+from django.db import connection
+from django.db.models import Count, Avg, Sum, Q, Min, Max
+from django.db import transaction
+from django.contrib.auth import authenticate
+from asgiref.sync import sync_to_async
+from fastapi import FastAPI, HTTPException
+import uvicorn
+from fastmcp import FastMCP
+
+# Import marketplace models
+from marketplace.models import Listing, Category
+
+# Initialize FastMCP server for stock operations
+mcp = FastMCP("Piața.ro Stock Agent - Real Database Operations")
+
+# Helper functions to make Django ORM calls async-safe
+def _get_marketplace_overview_sync():
+    """Synchronous version of marketplace overview for async wrapping"""
+    try:
+        # Total listings
+        total_listings = Listing.objects.count()
+        active_listings = Listing.objects.filter(status='active').count()
+        sold_listings = Listing.objects.filter(status='sold').count()
+        pending_listings = Listing.objects.filter(status='pending').count()
         
-        Args:
-            mcp_server_url: URL of the MCP server (likely the Django app's MCP endpoint if this agent calls other tools)
-        """
-        self.mcp_server_url = mcp_server_url
-        self.client = httpx.AsyncClient(timeout=30.0)
-    
-    async def __aenter__(self):
-        return self
-    
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.client.aclose()
-    
-    # This method seems to be for calling *another* MCP server.
-    # If this agent *is* the MCP server, its tools will be defined with @mcp.tool()
-    async def call_mcp_tool(self, tool_name: str, **kwargs) -> Dict[str, Any]:
-        """
-        Call an MCP tool on a remote MCP server.
+        # Category statistics
+        categories_with_counts = Category.objects.annotate(
+            listing_count=Count('listings')
+        ).order_by('-listing_count')[:10]
         
-        Args:
-            tool_name: Name of the MCP tool to call
-            **kwargs: Parameters to pass to the tool
+        # Price statistics
+        price_stats = Listing.objects.filter(
+            status='active', 
+            price__isnull=False
+        ).aggregate(
+            avg_price=Avg('price'),
+            min_price=Min('price'),
+            max_price=Max('price')
+        )
         
-        Returns:
-            Tool response data
-        """
+        # Recent activity (last 7 days)
+        week_ago = datetime.now() - timedelta(days=7)
+        recent_listings = Listing.objects.filter(
+            created_at__gte=week_ago
+        ).count()
+        
+        # Location statistics
+        location_stats = Listing.objects.filter(
+            status='active'
+        ).values('location').annotate(
+            count=Count('id')
+        ).order_by('-count')[:10]
+        
+        return {
+            "success": True,
+            "overview": {
+                "total_listings": total_listings,
+                "active_listings": active_listings,
+                "sold_listings": sold_listings,
+                "pending_listings": pending_listings,
+                "recent_listings_week": recent_listings,
+                "top_categories": [
+                    {
+                        "name": cat.name,
+                        "count": cat.listing_count,
+                        "slug": cat.slug
+                    }
+                    for cat in categories_with_counts
+                ],
+                "price_statistics": {
+                    "average_price": float(price_stats['avg_price'] or 0),
+                    "min_price": float(price_stats['min_price'] or 0),
+                    "max_price": float(price_stats['max_price'] or 0)
+                },
+                "top_locations": [
+                    {
+                        "location": loc['location'],
+                        "count": loc['count']
+                    }
+                    for loc in location_stats
+                ]
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get marketplace overview: {str(e)}",
+            "overview": {}
+        }
+
+def _get_category_analytics_sync(category_name: str):
+    """Synchronous version of category analytics"""
+    try:
+        # Find category by name or slug
         try:
-            payload = {
-                "tool": tool_name,
-                "parameters": kwargs
+            category = Category.objects.get(
+                Q(name__icontains=category_name) | Q(slug=category_name)
+            )
+        except Category.DoesNotExist:
+            return {
+                "success": False,
+                "error": f"Category '{category_name}' not found",
+                "analytics": {}
+            }
+        
+        # Get listings for this category
+        listings = Listing.objects.filter(category=category)
+        active_listings = listings.filter(status='active')
+        
+        return {
+            "success": True,
+            "category": category.name,
+            "analytics": {
+                "total_listings": listings.count(),
+                "active_listings": active_listings.count(),
+                "sample_listings": [
+                    {
+                        "id": listing.id,
+                        "title": listing.title,
+                        "price": float(listing.price) if listing.price else None,
+                        "location": listing.location
+                    }
+                    for listing in active_listings[:5]
+                ]
+            }
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get category analytics: {str(e)}",
+            "analytics": {}
+        }
+
+def _get_product_stock_info_sync(listing_id: str):
+    """Synchronous version of product stock info"""
+    try:
+        listing = Listing.objects.select_related('category', 'user').get(id=listing_id)
+        
+        return {
+            "success": True,
+            "listing": {
+                "id": listing.id,
+                "title": listing.title,
+                "description": listing.description,
+                "price": float(listing.price) if listing.price else None,
+                "category": listing.category.name if listing.category else None,
+                "location": listing.location,
+                "status": listing.status,
+                "seller": {
+                    "username": listing.user.username,
+                    "id": listing.user.id
+                },
+                "created_at": listing.created_at.isoformat()
+            }
+        }
+        
+    except Listing.DoesNotExist:
+        return {
+            "success": False,
+            "error": f"Listing with ID {listing_id} not found"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get listing info: {str(e)}"
+        }
+
+def _search_listings_sync(**kwargs):
+    """Synchronous version of search listings"""
+    try:
+        query = kwargs.get('query')
+        category = kwargs.get('category') 
+        location = kwargs.get('location')
+        status = kwargs.get('status', 'active')
+        limit = kwargs.get('limit', 20)
+        
+        listings = Listing.objects.select_related('category', 'user')
+        
+        # Apply filters
+        if status:
+            listings = listings.filter(status=status)
+            
+        if query:
+            listings = listings.filter(
+                Q(title__icontains=query) | Q(description__icontains=query)
+            )
+            
+        if category:
+            try:
+                cat = Category.objects.get(
+                    Q(name__icontains=category) | Q(slug=category)
+                )
+                listings = listings.filter(category=cat)
+            except Category.DoesNotExist:
+                pass
+                
+        if location:
+            listings = listings.filter(location__icontains=location)
+        
+        # Order by relevance (newest first)
+        listings = listings.order_by('-created_at')[:limit]
+        
+        results = []
+        for listing in listings:
+            results.append({
+                "id": listing.id,
+                "title": listing.title,
+                "price": float(listing.price) if listing.price else None,
+                "category": listing.category.name if listing.category else None,
+                "location": listing.location,
+                "status": listing.status,
+                "created_at": listing.created_at.isoformat(),
+                "seller_username": listing.user.username
+            })
+        
+        return {
+            "success": True,
+            "total_results": len(results),
+            "results": results
+        }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Search failed: {str(e)}",
+            "results": []
+        }
+
+def _get_user_listings_sync(username: str):
+    """Synchronous version of get user listings"""
+    try:
+        user = User.objects.get(username=username)
+        listings = Listing.objects.filter(user=user).select_related('category').order_by('-created_at')
+        
+        results = []
+        for listing in listings:
+            results.append({
+                "id": listing.id,
+                "title": listing.title,
+                "price": float(listing.price) if listing.price else None,
+                "category": listing.category.name if listing.category else None,
+                "location": listing.location,
+                "status": listing.status,
+                "created_at": listing.created_at.isoformat()
+            })
+        
+        return {
+            "success": True,
+            "user": {
+                "username": user.username,
+                "id": user.id
+            },
+            "total_listings": len(results),
+            "listings": results
+        }
+        
+    except User.DoesNotExist:
+        return {
+            "success": False,
+            "error": f"User '{username}' not found"
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to get user listings: {str(e)}"
+        }
+
+def _create_user_sync(username: str, email: str, password: str, first_name: str = "", last_name: str = ""):
+    """Synchronous version of create user"""
+    try:
+        with transaction.atomic():
+            # Check if user already exists
+            if User.objects.filter(username=username).exists():
+                return {
+                    "success": False,
+                    "error": f"User with username '{username}' already exists",
+                    "user_id": None
+                }
+            
+            if User.objects.filter(email=email).exists():
+                return {
+                    "success": False,
+                    "error": f"User with email '{email}' already exists",
+                    "user_id": None
+                }
+            
+            # Create new user
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            
+            return {
+                "success": True,
+                "message": f"User '{username}' created successfully",
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "date_joined": user.date_joined.isoformat()
+                }
             }
             
-            response = await self.client.post(
-                f"{self.mcp_server_url}/tools/{tool_name}",
-                json=payload
-            )
-            response.raise_for_status()
-            return response.json()
-            
-        except httpx.RequestError as e:
-            return {"error": f"Request error: {str(e)}"}
-        except httpx.HTTPStatusError as e:
-            return {"error": f"HTTP error: {e.response.status_code}"}
-        except Exception as e:
-            return {"error": f"Unexpected error: {str(e)}"}
-    
-    # Example tool for the Stock Agent MCP Server
-    @mcp.tool()
-    async def get_product_stock(self, product_id: str) -> Dict[str, Any]:
-        """
-        Retrieves stock information for a given product ID.
-        This is a placeholder and should be implemented to connect to the actual database or inventory system.
-        """
-        # In a real scenario, this would query a database or an inventory API
-        # For now, returning dummy data
-        if product_id == "123":
-            return {"product_id": product_id, "name": "Laptop Dell XPS", "stock_level": 15, "status": "In Stock"}
-        elif product_id == "456":
-            return {"product_id": product_id, "name": "Tastatura Mecanica", "stock_level": 0, "status": "Out of Stock"}
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to create user: {str(e)}",
+            "user_id": None
+        }
+
+def _authenticate_user_sync(username: str, password: str):
+    """Synchronous version of authenticate user"""
+    try:
+        user = authenticate(username=username, password=password)
+        
+        if user is not None:
+            return {
+                "success": True,
+                "authenticated": True,
+                "user": {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "last_login": user.last_login.isoformat() if user.last_login else None,
+                    "is_active": user.is_active
+                }
+            }
         else:
-            return {"product_id": product_id, "stock_level": "N/A", "status": "Product not found"}
+            return {
+                "success": True,
+                "authenticated": False,
+                "message": "Invalid username or password"
+            }
+            
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Authentication failed: {str(e)}"
+        }
 
-    @mcp.tool()
-    async def update_stock_level(self, product_id: str, new_stock_level: int, reason: str) -> Dict[str, Any]:
-        """
-        Updates the stock level for a given product ID.
-        This is a placeholder.
-        """
-        # In a real scenario, this would update the database or inventory system
-        print(f"Stock level for product {product_id} updated to {new_stock_level} due to: {reason}")
-        return {"product_id": product_id, "new_stock_level": new_stock_level, "status": "Update successful"}
-
-    @mcp.tool()
-    async def get_low_stock_alerts(self, threshold: int = 5) -> Dict[str, Any]:
-        """
-        Identifies products with stock levels below a specified threshold.
-        This is a placeholder.
-        """
-        # Dummy low stock products
-        low_stock_items = [
-            {"product_id": "789", "name": "Mouse Wireless", "stock_level": 3, "threshold": threshold},
-            {"product_id": "101", "name": "Monitor LED", "stock_level": 2, "threshold": threshold},
-        ]
-        return {"low_stock_alerts": low_stock_items, "count": len(low_stock_items)}
-    
-    async def get_marketplace_overview(self) -> str:
-        """
-        Get a comprehensive overview of the marketplace by calling the Django MCP server.
-        This method assumes the Django app exposes an MCP server with the necessary tools.
-        The mcp_server_url for PiataRoStockAgent instance should point to the Django MCP.
-        Returns:
-            Formatted string with marketplace overview
-        """
-        try:
-            # Get statistics
-            stats_response = await self.call_mcp_tool("get_listing_stats")
+def _create_listing_sync(title: str, description: str, price: float, category_name: str, 
+                        location: str, username: str):
+    """Synchronous version of create listing"""
+    try:
+        with transaction.atomic():
+            # Get user
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                return {
+                    "success": False,
+                    "error": f"User '{username}' not found"
+                }
             
-            # Get categories
-            categories_response = await self.call_mcp_tool("get_categories")
-            
-            # Get recent listings
-            listings_response = await self.call_mcp_tool("get_listings", limit=5)
-            
-            overview = "# Piata.ro Marketplace Overview\n\n"
-            
-            # Add statistics
-            if "error" not in stats_response:
-                stats = stats_response
-                overview += "## Statistics\n"
-                overview += f"- Total Listings: {stats.get('total_listings', 0)}\n"
-                overview += f"- Categories: {stats.get('total_categories', 0)}\n"
-                overview += f"- Price Range: ${stats.get('min_price', 0)} - ${stats.get('max_price', 0)}\n"
-                overview += f"- Average Price: ${stats.get('avg_price', 0)}\n"
-                overview += f"- Featured Listings: {stats.get('featured_listings', 0)}\n\n"
-            
-            # Add categories
-            if "error" not in categories_response:
-                categories = categories_response
-                if isinstance(categories_response, dict) and "categories" in categories_response:
-                    categories = categories_response["categories"]
-                if isinstance(categories, list):
-                    overview += "## Available Categories\n"
-                    for category in categories[:10]:  # Show first 10 categories
-                        overview += f"- {category}\n"
-                    overview += "\n"
-            
-            # Add recent listings
-            if "error" not in listings_response and isinstance(listings_response, list):
-                overview += "## Recent Listings\n"
-                for listing in listings_response:
-                    if isinstance(listing, dict):
-                        overview += f"### {listing.get('title', 'Untitled')}\n"
-                        overview += f"**Price:** ${listing.get('price', 0)}\n"
-                        overview += f"**Category:** {listing.get('category', 'N/A')}\n"
-                        overview += f"**Location:** {listing.get('location', 'N/A')}\n"
-                        if listing.get('is_featured'):
-                            overview += "**Featured** ⭐\n"
-                        overview += "\n"
-            
-            return overview
-            
-        except Exception as e:
-            return f"Error generating marketplace overview: {str(e)}"
-    
-    async def search_and_analyze(self, query: str, category: Optional[str] = None, max_price: Optional[float] = None) -> str:
-        """
-        Search listings and provide analysis.
-        
-        Args:
-            query: Search query
-            category: Optional category filter
-            max_price: Optional maximum price filter
-        
-        Returns:
-            Formatted analysis of search results
-        """
-        try:
-            # Perform search
-            search_params = {"query": query}
-            if category:
-                search_params["category"] = category
-            if max_price:
-                search_params["max_price"] = str(max_price)
-            
-            search_response = await self.call_mcp_tool("search_listings", **search_params)
-            
-            if "error" in search_response:
-                return f"Search error: {search_response['error']}"
-            
-            if not isinstance(search_response, list) or len(search_response) == 0:
-                return f"No listings found for query: '{query}'"
-            
-            # Analyze results
-            analysis = f"# Search Results for '{query}'\n\n"
-            analysis += f"Found {len(search_response)} listings\n\n"
-            
-            # Price analysis
-            prices = []
-            for listing in search_response:
-                if isinstance(listing, dict) and listing.get('price'):
-                    prices.append(listing.get('price', 0))
-                    
-            if prices:
-                avg_price = sum(prices) / len(prices)
-                min_price = min(prices)
-                max_price = max(prices)
-                
-                analysis += "## Price Analysis\n"
-                analysis += f"- Average Price: ${avg_price:.2f}\n"
-                analysis += f"- Price Range: ${min_price} - ${max_price}\n\n"
-            
-            # Category breakdown
-            categories = {}
-            for listing in search_response:
-                if isinstance(listing, dict):
-                    cat = listing.get('category', 'Unknown')
-                    categories[cat] = categories.get(cat, 0) + 1
-            
-            if categories:
-                analysis += "## Category Breakdown\n"
-                for cat, count in sorted(categories.items(), key=lambda x: x[1], reverse=True):
-                    analysis += f"- {cat}: {count} listings\n"
-                analysis += "\n"
-            
-            # Show top results
-            analysis += "## Top Results\n"
-            max_results = min(5, len(search_response))
-            for i in range(max_results):
-                listing = search_response[i]
-                if isinstance(listing, dict):
-                    analysis += f"### {i+1}. {listing.get('title', 'Untitled')}\n"
-                    analysis += f"**Price:** ${listing.get('price', 0)}\n"
-                    analysis += f"**Category:** {listing.get('category', 'N/A')}\n"
-                    analysis += f"**Location:** {listing.get('location', 'N/A')}\n"
-                    if listing.get('is_featured'):
-                        analysis += "**Featured** ⭐\n"
-                    
-                    description = listing.get('description', '')
-                    if len(description) > 100:
-                        description = description[:100] + "..."
-                    analysis += f"**Description:** {description}\n\n"
-            
-            return analysis
-            
-        except Exception as e:
-            return f"Error performing search and analysis: {str(e)}"
-    
-    async def add_listing_with_validation(self, title: str, description: str, price: float, 
-                                        category: str, location: str, contact_info: str) -> str:
-        """
-        Add a new listing with validation and feedback.
-        
-        Args:
-            title: Listing title
-            description: Listing description
-            price: Listing price
-            category: Listing category
-            location: Listing location
-            contact_info: Contact information
-        
-        Returns:
-            Success message or error details
-        """
-        try:
-            # Validate inputs
-            if not title or len(title.strip()) < 3:
-                return "Error: Title must be at least 3 characters long"
-            
-            if not description or len(description.strip()) < 10:
-                return "Error: Description must be at least 10 characters long"
-            
-            if price <= 0:
-                return "Error: Price must be greater than 0"
-            
-            if not category or not category.strip():
-                return "Error: Category is required"
-            
-            if not location or not location.strip():
-                return "Error: Location is required"
-            
-            if not contact_info or not contact_info.strip():
-                return "Error: Contact information is required"
-            
-            # Add the listing
-            response = await self.call_mcp_tool(
-                "add_listing",
-                title=title.strip(),
-                description=description.strip(),
-                price=price,
-                category=category.strip(),
-                location=location.strip(),
-                contact_info=contact_info.strip()
+            # Get or create category
+            category, created = Category.objects.get_or_create(
+                name=category_name,
+                defaults={'slug': category_name.lower().replace(' ', '-')}
             )
             
-            if "error" in response:
-                return f"Failed to add listing: {response['error']}"
+            # Create listing
+            listing = Listing.objects.create(
+                title=title,
+                description=description,
+                price=price,
+                category=category,
+                location=location,
+                user=user,
+                status='active'
+            )
             
-            if response.get("success"):
-                return f"✅ Listing added successfully! ID: {response.get('listing_id')}"
+            return {
+                "success": True,
+                "message": f"Listing '{title}' created successfully",
+                "listing": {
+                    "id": listing.id,
+                    "title": listing.title,
+                    "price": float(listing.price) if listing.price else None,
+                    "category": listing.category.name,
+                    "location": listing.location,
+                    "status": listing.status,
+                    "created_at": listing.created_at.isoformat()
+                }
+            }
             
-            return "Listing submission completed, but status unclear"
-            
-        except Exception as e:
-            return f"Error adding listing: {str(e)}"
-    
-    async def get_category_insights(self, category: str) -> str:
-        """
-        Get insights about a specific category.
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Failed to create listing: {str(e)}"
+        }
+
+def _execute_custom_query_sync(query: str):
+    """Synchronous version of execute custom query (SELECT only)"""
+    try:
+        # Security check - only allow SELECT statements
+        query_upper = query.strip().upper()
+        if not query_upper.startswith('SELECT'):
+            return {
+                "success": False,
+                "error": "Only SELECT queries are allowed for security reasons"
+            }
         
-        Args:
-            category: Category to analyze
-        
-        Returns:
-            Formatted insights about the category
-        """
-        try:
-            # Get listings for this category
-            category_listings = await self.call_mcp_tool("get_listings", limit=50, category=category)
-            
-            if "error" in category_listings:
-                return f"Error getting category data: {category_listings['error']}"
-            
-            if not isinstance(category_listings, list) or len(category_listings) == 0:
-                return f"No listings found in category: {category}"
-            
-            insights = f"# Category Insights: {category}\n\n"
-            insights += f"Total listings in category: {len(category_listings)}\n\n"
-            
-            # Price analysis
-            prices = [listing.get('price', 0) for listing in category_listings if listing.get('price')]
-            if prices:
-                avg_price = sum(prices) / len(prices)
-                min_price = min(prices)
-                max_price = max(prices)
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            if cursor.description:
+                columns = [col[0] for col in cursor.description]
+                results = []
+                for row in cursor.fetchall():
+                    results.append(dict(zip(columns, row)))
                 
-                insights += "## Price Analysis\n"
-                insights += f"- Average Price: ${avg_price:.2f}\n"
-                insights += f"- Lowest Price: ${min_price}\n"
-                insights += f"- Highest Price: ${max_price}\n\n"
-            
-            # Location analysis
-            locations = {}
-            for listing in category_listings:
-                loc = listing.get('location', 'Unknown')
-                locations[loc] = locations.get(loc, 0) + 1
-            
-            if locations:
-                insights += "## Top Locations\n"
-                for loc, count in sorted(locations.items(), key=lambda x: x[1], reverse=True)[:5]:
-                    insights += f"- {loc}: {count} listings\n"
-                insights += "\n"
-            
-            # Featured listings
-            featured = [listing for listing in category_listings if listing.get('is_featured')]
-            if featured:
-                insights += f"## Featured Listings ({len(featured)})\n"
-                for listing in featured[:3]:
-                    insights += f"- **{listing.get('title', 'Untitled')}** - ${listing.get('price', 0)}\n"
-                insights += "\n"
-            
-            return insights
-            
-        except Exception as e:
-            return f"Error generating category insights: {str(e)}"
+                return {
+                    "success": True,
+                    "query": query,
+                    "columns": columns,
+                    "results": results,
+                    "row_count": len(results)
+                }
+            else:
+                return {
+                    "success": True,
+                    "query": query,
+                    "message": "Query executed successfully (no results returned)"
+                }
+        
+    except Exception as e:
+        return {
+            "success": False,
+            "error": f"Query execution failed: {str(e)}"
+        }
+
+# Convert sync functions to async using sync_to_async
+get_marketplace_overview_async = sync_to_async(_get_marketplace_overview_sync)
+get_category_analytics_async = sync_to_async(_get_category_analytics_sync)
+get_product_stock_info_async = sync_to_async(_get_product_stock_info_sync)
+search_listings_async = sync_to_async(_search_listings_sync)
+get_user_listings_async = sync_to_async(_get_user_listings_sync)
+create_user_async = sync_to_async(_create_user_sync)
+authenticate_user_async = sync_to_async(_authenticate_user_sync)
+create_listing_async = sync_to_async(_create_listing_sync)
+execute_custom_query_async = sync_to_async(_execute_custom_query_sync)
+
+# Additional MCP Tools for SQL operations
+@mcp.tool()
+async def create_user(username: str, email: str, password: str, first_name: str = "", last_name: str = "") -> Dict[str, Any]:
+    """
+    Create a new user in the Django database.
+    
+    Args:
+        username: Unique username for the user
+        email: User's email address  
+        password: User's password
+        first_name: User's first name (optional)
+        last_name: User's last name (optional)
+        
+    Returns:
+        Dictionary with user creation status and user info
+    """
+    return await create_user_async(username, email, password, first_name, last_name)
+
+@mcp.tool()
+async def authenticate_user(username: str, password: str) -> Dict[str, Any]:
+    """
+    Authenticate a user with username and password.
+    
+    Args:
+        username: Username to authenticate
+        password: Password to verify
+        
+    Returns:
+        Dictionary with authentication result and user info if successful
+    """
+    return await authenticate_user_async(username, password)
+
+@mcp.tool()
+async def create_listing(title: str, description: str, price: float, category_name: str, 
+                        location: str, username: str) -> Dict[str, Any]:
+    """
+    Create a new marketplace listing.
+    
+    Args:
+        title: Listing title
+        description: Listing description
+        price: Listing price
+        category_name: Category name (will be created if doesn't exist)
+        location: Listing location
+        username: Username of the listing creator
+        
+    Returns:
+        Dictionary with listing creation status and listing info
+    """
+    return await create_listing_async(title, description, price, category_name, location, username)
+
+@mcp.tool()
+async def execute_custom_query(query: str) -> Dict[str, Any]:
+    """
+    Execute a custom SQL query (SELECT only for security).
+    
+    Args:
+        query: SQL SELECT query to execute
+        
+    Returns:
+        Dictionary with query results
+    """
+    return await execute_custom_query_async(query)
+
+# Create FastAPI app for REST endpoints
+rest_app = FastAPI(title="Piața.ro Database Agent API", version="1.0.0")
+
+# REST API endpoints for tool calls
+@rest_app.post("/call")
+async def call_tool(request: dict):
+    """REST endpoint to call MCP tools"""
+    try:
+        method = request.get("method")
+        params = request.get("params", {})
+        
+        if method != "tools/call":
+            raise HTTPException(status_code=400, detail="Only tools/call method supported")
+        
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
+        
+        # Get the tool from MCP server and call it properly
+        available_tools = await mcp.get_tools()
+        
+        if tool_name not in available_tools:
+            raise HTTPException(status_code=400, detail=f"Unknown tool: {tool_name}")
+        
+        # Call the tool function directly (since they're decorated functions)
+        tool_function = available_tools[tool_name].fn
+        if tool_args:
+            result = await tool_function(**tool_args)
+        else:
+            result = await tool_function()
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": result
+        }
+        
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "error": {
+                "code": -1,
+                "message": str(e)
+            }
+        }
+
+@rest_app.get("/tools")
+async def list_tools():
+    """List available MCP tools"""
+    try:
+        tools = await mcp.get_tools()
+        return {
+            "tools": [
+                {
+                    "name": name,
+                    "description": tool.description or "No description available"
+                }
+                for name, tool in tools.items()
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing tools: {str(e)}")
+
+@rest_app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "piata-database-agent"}
 
 # Main execution block
 if __name__ == "__main__":
+    import argparse
+    
     parser = argparse.ArgumentParser(description="Piata.ro Stock MCP Agent")
-    parser.add_argument("--port", type=int, default=os.getenv("STOCK_AGENT_PORT", 8003), help="Port to run the MCP server on")
+    parser.add_argument("--port", type=int, default=8003, help="Port to run the MCP server on")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Host to bind the MCP server to")
     args = parser.parse_args()
 
-    print(f"🚀 Starting Piața.ro Stock Agent MCP Server on {args.host}:{args.port}")
+    print(f"🚀 Starting Piața.ro Database Agent (Stock + SQL Operations) on {args.host}:{args.port}")
+    print("Available tools (connected to real database):")
+    print("📊 Stock & Analytics:")
+    print("  - get_marketplace_overview: Get comprehensive marketplace statistics")
+    print("  - get_category_analytics: Get detailed category analytics")
+    print("  - get_product_stock_info: Get specific listing information")
+    print("  - search_listings: Search listings with filters")
+    print("  - get_user_listings: Get all listings for a user")
+    print("👥 User Management:")
+    print("  - create_user: Create new users")
+    print("  - authenticate_user: Authenticate users")
+    print("📝 Listing Management:")
+    print("  - create_listing: Create new marketplace listings")
+    print("🔍 Custom Queries:")
+    print("  - execute_custom_query: Execute custom SELECT queries")
+    print(f"\n🎯 Database Agent ready for comprehensive Piata.ro operations on {args.host}:{args.port}!")
+    print(f"📡 REST API available at http://{args.host}:{args.port}/call")
+    print(f"🔍 Tools list available at http://{args.host}:{args.port}/tools")
     
-    # Example: If this agent needs to *call* the main Django MCP server for some operations
-    # main_mcp_url = os.getenv("MAIN_DJANGO_MCP_URL", "http://localhost:8000/mcp") # Assuming Django MCP is at /mcp
-    # stock_agent_logic = PiataRoStockAgent(mcp_server_url=main_mcp_url)
-    # You could then potentially pass stock_agent_logic to tools if they need to make calls.
-    # For now, the tools are self-contained or placeholders.
-
-    # Run the FastMCP server with the defined tools
-    # The tools are automatically discovered by FastMCP from the @mcp.tool() decorators
-    mcp.run(host=args.host, port=args.port)
-
-# Example usage (if you were to run this agent's logic directly, not as a server)
-# async def main_logic():
-#     # Example: Initialize with the URL of the *main* MCP server (e.g., Django's)
-#     # if this agent needs to *call* tools from it.
-#     # agent_mcp_url = os.getenv("MAIN_DJANGO_MCP_URL", "http://localhost:8000/mcp") 
-#     # async with PiataRoStockAgent(mcp_server_url=agent_mcp_url) as agent:
-#     #     overview = await agent.get_marketplace_overview() # This would call the Django MCP
-#     #     print(overview)
-# 
-#     #     stock_info = await agent.get_product_stock("123") # This is a tool *provided* by this agent
-#     #     print(json.dumps(stock_info, indent=2))
-# 
-# if __name__ == "__main__" and not (os.getenv("RUN_MCP_SERVER_MODE") == "true"): # Avoid running if in server mode
-#    asyncio.run(main_logic())
+    # Run the REST API server using uvicorn
+    uvicorn.run(rest_app, host=args.host, port=args.port)

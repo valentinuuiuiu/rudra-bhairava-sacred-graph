@@ -251,29 +251,9 @@ def home(request):
 
 def home_view(request):
     """Homepage view with enhanced functionality."""
-    # Get all categories for the dropdown
-    categories = Category.objects.all()
-
-    # Get featured/promoted listings
-    featured_listings = Listing.objects.filter(
-        status="active", is_featured=True
-    ).order_by("-created_at")[:8]
-
-    # Get recent listings
-    recent_listings = Listing.objects.filter(status="active").order_by("-created_at")[:12]
-
-    # Get statistics
-    total_listings = Listing.objects.filter(status="active").count()
-    total_categories = Category.objects.count()
-
-    context = {
-        "categories": categories,
-        "featured_listings": featured_listings,
-        "recent_listings": recent_listings,
-        "total_listings": total_listings,
-        "total_categories": total_categories,
-    }
-
+    from marketplace.services import ListingService
+    
+    context = ListingService.get_marketplace_context()
     return render(request, "marketplace/index.html", context)
 
 
@@ -291,33 +271,9 @@ def categories_view(request):
 
 def category_detail_view(request, category_slug):
     """Category detail page with listings."""
-    from django.shortcuts import get_object_or_404
+    from marketplace.services import ListingService
     
-    category = get_object_or_404(Category, slug=category_slug)
-    
-    # Get subcategories
-    subcategories = Category.objects.filter(parent=category)
-    
-    # Get listings in this category and subcategories
-    category_ids = [category.id] + list(subcategories.values_list('id', flat=True))
-    listings = Listing.objects.filter(
-        category_id__in=category_ids,
-        status="active"
-    ).order_by("-created_at")
-    
-    # Handle pagination
-    from django.core.paginator import Paginator
-    paginator = Paginator(listings, 20)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        "category": category,
-        "subcategories": subcategories,
-        "listings": page_obj,
-        "page_title": f"Categoria: {category.name}",
-    }
-    
+    context = ListingService.get_category_context(category_slug, request.GET.get('page'))
     return render(request, "marketplace/category_detail.html", context)
 
 

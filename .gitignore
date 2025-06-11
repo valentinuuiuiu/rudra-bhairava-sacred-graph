@@ -1,16 +1,37 @@
+# Sacred Environment Files
+.env.sacred
+sacred_venv/
 __pycache__/
-*.py[cod]
-assets/external/
-.states
-.web
-*.db
-.env
-.env.local
-.env.*.local
-node_modules
-venv/
-*.sqlite3
-.vscode/
-*.log
 *.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv
+
+# Sacred Database Files
+*.sqlite3
+*.db
+sacred_knowledge_graph.log
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Files
 .DS_Store
+Thumbs.db
+
+# Sacred Secrets (Never commit these!)
+*password*
+*secret*
+*key*
+!.env.sacred.example
+
+# Temporary Sacred Files
+temp_*
+debug_*
+test_output_*

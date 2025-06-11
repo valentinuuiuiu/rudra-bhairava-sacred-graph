@@ -15,5 +15,7 @@
     "agents:all": "cd awesome-mcp-servers && ./start-agents.sh all",
     "agents:help": "cd awesome-mcp-servers && ./start-agents.sh help"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/jest": "^29.5.14"
+  }
 }

@@ -18,6 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+import debug_toolbar
 from django.contrib.auth import views as auth_views
 from django.conf import settings
 from django.conf.urls.static import static
@@ -28,6 +29,9 @@ from marketplace.views import register_view
 urlpatterns = [
     path('', include(('marketplace.urls', 'marketplace'), namespace='marketplace')),  # Include marketplace URLs for frontend
     path('admin/', admin.site.urls),
+    
+    # AI Assistant URLs (outside admin namespace to avoid conflicts)
+    path('ai-assistant/', include('ai_assistant.urls')),
     
     # Allauth URLs (includes social auth)
     path('accounts/', include('allauth.urls')),
@@ -46,3 +50,6 @@ urlpatterns = [
 # Add media serving in development
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += [
+        path('__debug__/', include(debug_toolbar.urls)),
+    ]

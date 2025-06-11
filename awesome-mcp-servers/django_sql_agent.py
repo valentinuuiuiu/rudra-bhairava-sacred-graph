@@ -1,32 +1,67 @@
 """
-Django SQL Agent - MCP Server for Database Operations
-A Model Context Protocol server that provides specialized tools for Django database operations,
-user management, and marketplace data handling for Piata.ro Project.
+Content & Media Processing Agent - MCP Server for Piața.ro
+A Model Context Protocol server that provides specialized tools for content processing,
+image handling, location services, and media management for the Piața.ro marketplace.
 """
 
 import os
+import sys
 import asyncio
 import json
-import sqlite3
+import hashlib
+import mimetypes
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any, Union, Tuple
 from pathlib import Path
-import django
-from django.conf import settings
+import requests
+import base64
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 # Setup Django environment
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'piata_ro.settings')
+
+import django
+from django.conf import settings
 django.setup()
 
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate
 from django.db import transaction, connection
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from asgiref.sync import sync_to_async
 from fastmcp import FastMCP
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from fastapi import FastAPI, HTTPException, UploadFile, File
+import uvicorn
 
-# Initialize FastMCP server for Django SQL operations
-mcp = FastMCP("Django SQL Agent - Piata.ro Database Manager")
+# Import marketplace models
+try:
+    from marketplace.models import Listing, Category, ListingImage, UserProfile
+    from marketplace.location_services import Location
+except ImportError:
+    # If marketplace app doesn't exist yet, we'll create placeholder
+    Listing = None
+    Category = None
+    ListingImage = None
+    UserProfile = None
+    Location = None
+
+# Try to import PIL for image processing
+try:
+    from PIL import Image, ImageFilter, ImageEnhance
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
+
+# Initialize FastMCP server for content processing
+mcp = FastMCP("Content & Media Processing Agent - Piața.ro")
+
+# Create FastAPI app for REST endpoints
+rest_app = FastAPI(title="Content & Media Processing API", version="1.0.0")
 
 # Pydantic models for data validation
 class UserCreateData(BaseModel):
@@ -360,7 +395,7 @@ def search_listings(search_query: ListingSearchQuery) -> Dict[str, Any]:
         }
 
 @mcp.tool()
-def get_database_stats() -> Dict[str, Any]:
+async def get_database_stats() -> Dict[str, Any]:
     """
     Get database statistics and health information.
     
@@ -370,21 +405,22 @@ def get_database_stats() -> Dict[str, Any]:
     try:
         from marketplace.models import Listing, Category
         
-        # Get counts
-        total_users = User.objects.count()
-        active_users = User.objects.filter(is_active=True).count()
-        total_listings = Listing.objects.count()
-        featured_listings = Listing.objects.filter(is_featured=True).count()
-        total_categories = Category.objects.count()
+        # Get counts using sync_to_async
+        total_users = await sync_to_async(User.objects.count)()
+        active_users = await sync_to_async(User.objects.filter(is_active=True).count)()
+        total_listings = await sync_to_async(Listing.objects.count)()
+        featured_listings = await sync_to_async(Listing.objects.filter(is_featured=True).count)()
+        total_categories = await sync_to_async(Category.objects.count)()
         
-        # Get recent activity
-        recent_users = User.objects.filter(
-            date_joined__gte=datetime.now() - timedelta(days=7)
-        ).count()
+        # Get recent activity using sync_to_async
+        seven_days_ago = datetime.now() - timedelta(days=7)
+        recent_users = await sync_to_async(
+            User.objects.filter(date_joined__gte=seven_days_ago).count
+        )()
         
-        recent_listings = Listing.objects.filter(
-            created_at__gte=datetime.now() - timedelta(days=7)
-        ).count()
+        recent_listings = await sync_to_async(
+            Listing.objects.filter(created_at__gte=seven_days_ago).count
+        )()
         
         return {
             "success": True,
@@ -543,8 +579,77 @@ def get_marketplace_context() -> Dict[str, Any]:
             "marketplace_context": {}
         }
 
+# REST API endpoints for tool calls
+@rest_app.post("/call")
+async def call_tool(request: dict):
+    """REST endpoint to call MCP tools"""
+    try:
+        method = request.get("method")
+        params = request.get("params", {})
+        
+        if method != "tools/call":
+            raise HTTPException(status_code=400, detail="Only tools/call method supported")
+        
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
+        
+        # Get the tool from MCP server and call it properly
+        available_tools = await mcp.get_tools()
+        
+        if tool_name not in available_tools:
+            raise HTTPException(status_code=400, detail=f"Unknown tool: {tool_name}")
+        
+        # Call the tool function directly (since they're decorated functions)
+        tool_function = available_tools[tool_name].fn
+        result = tool_function(**tool_args)
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": result
+        }
+        
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "error": {
+                "code": -1,
+                "message": str(e)
+            }
+        }
+
+@rest_app.get("/tools")
+async def list_tools():
+    """List available MCP tools"""
+    try:
+        tools = await mcp.get_tools()
+        return {
+            "tools": [
+                {
+                    "name": name,
+                    "description": tool.description or "No description available"
+                }
+                for name, tool in tools.items()
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error listing tools: {str(e)}")
+
+@rest_app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "django-sql-agent"}
+
 # Run the MCP server
 if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Django SQL Agent MCP Server')
+    parser.add_argument('--port', type=int, default=8002, help='Port to run the MCP server on')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the MCP server to')
+    args = parser.parse_args()
+    
     print("🚀 Starting Django SQL Agent MCP Server...")
     print("Available tools:")
     print("  - create_user: Create new users")
@@ -554,5 +659,10 @@ if __name__ == "__main__":
     print("  - search_listings: Search for listings")
     print("  - get_database_stats: Get database statistics")
     print("  - execute_custom_query: Execute custom SELECT queries")
-    print("\n🎯 Django SQL Agent ready for Piata.ro database operations!")
-    mcp.run()
+    print("  - get_marketplace_context: Get marketplace overview")
+    print(f"\n🎯 Django SQL Agent ready for Piata.ro database operations on {args.host}:{args.port}!")
+    print(f"📡 REST API available at http://{args.host}:{args.port}/call")
+    print(f"🔍 Tools list available at http://{args.host}:{args.port}/tools")
+    
+    # Run the REST API server using uvicorn
+    uvicorn.run(rest_app, host=args.host, port=args.port)

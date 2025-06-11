@@ -18,6 +18,9 @@ from pydantic import BaseModel
 import sqlite3
 import httpx
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
 
 # Load environment variables
 load_dotenv()
@@ -25,11 +28,18 @@ load_dotenv()
 # Initialize FastMCP server for advertising helper
 mcp = FastMCP("Piața.ro Advertising Helper Agent")
 
-# Database connection helper
-def get_db_connection():
-    """Get SQLite database connection"""
-    db_path = os.getenv('DATABASE_PATH', 'db.sqlite3')
-    return sqlite3.connect(db_path)
+# Create FastAPI app for REST endpoints
+rest_app = FastAPI(title="Piața.ro Advertising Helper API")
+
+# Add CORS middleware
+rest_app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Pydantic models for data validation
 class ListingData(BaseModel):
@@ -52,6 +62,16 @@ def get_db_connection():
     """Get SQLite database connection"""
     db_path = os.getenv('DATABASE_PATH', 'db.sqlite3')
     return sqlite3.connect(db_path)
+
+# Health check endpoint
+@mcp.tool()
+def health_check() -> str:
+    """Health check endpoint for monitoring"""
+    return json.dumps({
+        "status": "healthy", 
+        "timestamp": datetime.now().isoformat(),
+        "service": "advertising-agent"
+    })
 
 # Romanian marketplace categories for advertising optimization
 ROMANIAN_CATEGORIES = {
@@ -774,6 +794,72 @@ def get_advertising_analytics() -> str:
     except Exception as e:
         return f"Error generating analytics: {str(e)}"
 
+# REST API endpoints for tool calls
+@rest_app.post("/call")
+async def call_tool(request: dict):
+    """REST endpoint to call MCP tools"""
+    try:
+        method = request.get("method")
+        params = request.get("params", {})
+        
+        if method != "tools/call":
+            raise HTTPException(status_code=400, detail="Only tools/call method supported")
+        
+        tool_name = params.get("name")
+        tool_args = params.get("arguments", {})
+        
+        # Get the tool from MCP server and call it properly
+        available_tools = await mcp.get_tools()
+        
+        if tool_name not in available_tools:
+            raise HTTPException(status_code=400, detail=f"Unknown tool: {tool_name}")
+        
+        # Call the tool function directly (since they're decorated functions)
+        tool_function = available_tools[tool_name].fn
+        result = tool_function(**tool_args)
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": result
+        }
+        
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "error": {
+                "code": -1,
+                "message": str(e)
+            }
+        }
+
+@rest_app.get("/health")
+async def health():
+    """Health check endpoint"""
+    return {"status": "healthy", "service": "advertising-agent"}
+
 if __name__ == "__main__":
-    # Run the MCP server
-    mcp.run()
+    import argparse
+    
+    parser = argparse.ArgumentParser(description='Piața.ro Advertising Helper Agent')
+    parser.add_argument('--port', type=int, default=8001, help='Port to run the MCP server on')
+    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to bind the MCP server to')
+    args = parser.parse_args()
+    
+    print(f"🚀 Starting Piața.ro Advertising Helper Agent on {args.host}:{args.port}")
+    
+    # Create a combined app that serves both MCP SSE and REST API
+    from fastapi import FastAPI
+    from fastapi.responses import StreamingResponse
+    import threading
+    
+    # Mount the MCP server as SSE endpoint
+    @rest_app.get("/sse")
+    async def sse_endpoint():
+        """SSE endpoint for MCP protocol"""
+        # This would need proper SSE implementation
+        return {"message": "SSE endpoint for MCP protocol"}
+    
+    # Run the REST API server
+    uvicorn.run(rest_app, host=args.host, port=args.port)

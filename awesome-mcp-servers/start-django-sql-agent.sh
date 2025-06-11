@@ -32,7 +32,7 @@ cd ..
 
 # Start the Django SQL Agent
 echo "🔥 Starting Django SQL Agent on port 8002..."
-python awesome-mcp-servers/django_sql_agent.py
+python awesome-mcp-servers/django_sql_agent.py --port 8002
 
 echo "✅ Django SQL Agent started successfully!"
 echo "🔌 Available MCP tools:"
