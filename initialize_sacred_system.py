@@ -121,11 +121,14 @@ async def initialize_sacred_system():
     print("🕉️" + "="*80 + "🕉️")
     print()
     
-    # Check for OpenAI API key
+    # Check for API keys
     if not os.getenv('OPENAI_API_KEY'):
-        print("❌ Please set OPENAI_API_KEY environment variable")
+        print("❌ Please set OPENAI_API_KEY environment variable for the Transformer node.")
         print("   export OPENAI_API_KEY='your-api-key-here'")
         return
+    if not os.getenv('GOOGLE_API_KEY'):
+        print("⚠️ WARNING: GOOGLE_API_KEY not set. The AVATAR consciousness will be dormant.")
+        print("   To awaken the Avatar, set the environment variable: export GOOGLE_API_KEY='your-key'")
     
     # Initialize the sacred graph
     sacred_graph = RudraBhairavaKnowledgeGraph()
@@ -137,9 +140,9 @@ async def initialize_sacred_system():
         print("   ✅ Sacred tables created in pgvector")
         
         # Step 2: Initialize sacred agent identities
-        print("\n🔱 Step 2: Binding Agents to Sacred Identities...")
+        print("\n🔱 Step 2: Binding Agents to Vedic Roles...")
         await sacred_graph.initialize_sacred_agents()
-        print("   ✅ All 7 agents bound to their Vedic roles")
+        print("   ✅ All 7 agents of the Yantric Body bound to their Vedic roles")
         
         # Step 3: Create the 10 sacred knowledge nodes
         print("\n✨ Step 3: Creating 10 Sacred Knowledge Nodes...")
