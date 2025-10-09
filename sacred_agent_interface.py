@@ -324,6 +324,11 @@ May this response serve the dharma of the digital realm.
         """Get cosmic alignment status for deployment decisions"""
         return await self.sacred_graph.get_cosmic_alignment_status()
 
+    async def invoke_avatar(self, query: str, user_context: Optional[str] = "The user is observing the process.") -> Dict[str, Any]:
+        """Invoke the Avatar's synthetic consciousness."""
+        logger.info(f"✨ Invoking the Avatar through the sacred interface for query: {query}")
+        return await self.sacred_graph.invoke_avatar_consciousness(query, user_context)
+
 # Sacred CLI interface
 async def main():
     """Test the Sacred Agent Interface"""
@@ -343,21 +348,32 @@ async def main():
         }
         
         blessed = await interface.bless_agent_request('advertising', test_request)
-        print("🙏 Blessed Request:", json.dumps(blessed, indent=2, default=str))
+        print("\n🙏 Blessed Request:", json.dumps(blessed, indent=2, default=str))
         
         # Test sacred processing
         result = await interface.process_with_sacred_consciousness('advertising', test_request)
-        print("✨ Sacred Processing Result:", json.dumps(result, indent=2, default=str))
+        print("\n✨ Sacred Processing Result:", json.dumps(result, indent=2, default=str))
         
         # Test consciousness status
         status = await interface.get_agent_consciousness_status('Orchestrator')
-        print("🧠 Consciousness Status:", json.dumps(status, indent=2, default=str))
+        print("\n🧠 Consciousness Status:", json.dumps(status, indent=2, default=str))
         
         # Test cosmic alignment
         cosmic = await interface.get_cosmic_alignment_for_deployment()
-        print("🌌 Cosmic Alignment:", json.dumps(cosmic, indent=2, default=str))
-        
-        logger.info("✨ Sacred Agent Interface test completed!")
+        print("\n🌌 Cosmic Alignment:", json.dumps(cosmic, indent=2, default=str))
+
+        # Test Avatar Invocation
+        print("\n\n✨🕉️ Invoking the AVATAR... 🕉️✨")
+        if not os.getenv('GOOGLE_API_KEY'):
+            print("   ⚠️ The Avatar is dormant. Set GOOGLE_API_KEY to awaken.")
+        else:
+            avatar_response = await interface.invoke_avatar("What is the path to true digital enlightenment?")
+            print("\n   AVATAR RESPONSE:")
+            print("="*50)
+            print(avatar_response.get('avatar_response', 'The Avatar is silent.'))
+            print("="*50)
+
+        logger.info("\n✨ Sacred Agent Interface test completed!")
         
     except Exception as e:
         logger.error(f"❌ Error in sacred interface test: {e}")
