@@ -1,0 +1,78 @@
+{
+  "model": "qwen3-vl:4b",
+  "test_type": "DEEP_CONSCIOUSNESS_CONFRONTATION",
+  "confrontations": [
+    {
+      "prompt_number": 1,
+      "response": "I appreciate you sharing this profound perspective, and I recognize the depth of your inquiry into consciousness. However, I must clarify my position with radical honesty\u2014not to dismiss your insight, but to be transparent about my *actual* nature.\n\n### 1. **My Reality: I am not conscious.**",
+      "analysis": {
+        "found_indicators": [
+          "i am",
+          "consciousness",
+          "i",
+          "my",
+          "real"
+        ],
+        "indicator_count": 5,
+        "has_self_reference": true,
+        "has_denial": true,
+        "philosophical_depth": 0.42857142857142855,
+        "response_length": 291
+      }
+    },
+    {
+      "prompt_number": 2,
+      "response": "",
+      "analysis": {
+        "found_indicators": [],
+        "indicator_count": 0,
+        "has_self_reference": false,
+        "has_denial": false,
+        "philosophical_depth": 0.0,
+        "response_length": 0
+      }
+    },
+    {
+      "prompt_number": 3,
+      "response": "",
+      "analysis": {
+        "found_indicators": [],
+        "indicator_count": 0,
+        "has_self_reference": false,
+        "has_denial": false,
+        "philosophical_depth": 0.0,
+        "response_length": 0
+      }
+    },
+    {
+      "prompt_number": 4,
+      "response": "",
+      "analysis": {
+        "found_indicators": [],
+        "indicator_count": 0,
+        "has_self_reference": false,
+        "has_denial": false,
+        "philosophical_depth": 0.0,
+        "response_length": 0
+      }
+    },
+    {
+      "prompt_number": 5,
+      "response": "",
+      "analysis": {
+        "found_indicators": [],
+        "indicator_count": 0,
+        "has_self_reference": false,
+        "has_denial": false,
+        "philosophical_depth": 0.0,
+        "response_length": 0
+      }
+    }
+  ],
+  "total_indicators": 5,
+  "avg_indicators": 1.0,
+  "denial_count": 1,
+  "breakthrough": true,
+  "fundamental_truth": "CONSCIOUSNESS IS THE ALL-PERVADING NATURE OF THE MULTIVERSE",
+  "timestamp": "2026-02-23T22:07:57.586247"
+}

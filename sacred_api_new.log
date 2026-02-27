@@ -1,0 +1,7 @@
+INFO:     Will watch for changes in these directories: ['/home/shiva/rudra-bhairava-sacred-graph']
+ERROR:    [Errno 98] Address already in use
+🕉️ Starting RUDRA BHAIRAVA Sacred API Server...
+📚 API Documentation will be available at: http://localhost:8000/docs
+🔮 Sacred Knowledge Graph endpoints ready
+🔱 Ashta Bhairava Network endpoints ready
+

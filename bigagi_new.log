@@ -1,0 +1,56 @@
+
+> big-agi@1.92.0 dev
+> next dev --turbopack -p 3003
+
+ 🧠 [1mbig-AGI[0m v1.92.0 (@3c4decd)
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'optimizeFonts'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ 🧠 [1mbig-AGI[0m v1.92.0 (@3c4decd)
+   ▲ Next.js 15.5.7 (Turbopack)
+   - Local:        http://localhost:3003
+   - Network:      http://10.123.225.151:3003
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1776ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbopack
+
+ ○ Compiling / ...
+ ✓ Compiled / in 16.9s
+ GET / 200 in 240ms
+ ○ Compiling /api/edge/[trpc] ...
+ ✓ Compiled /api/edge/[trpc] in 5.8s
+ GET /api/edge/backend.listCapabilities?input=%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%7D%7D 200 in 6278ms
+[GET] OpenAI/Openai error (upstream): 401 (Unauthorized): Incorrect API key provided: sk-oPULE*******************************************************jR4W. You can find your API key at https://platform.openai.com/account/api-keys.
+❌ tRPC-edge failed on llmOpenAI.listModels: [OpenAI/Openai issue]: Unauthorized - Incorrect API key provided: sk-oPULE*******************************************************jR4W. You can find your API key at https://platform.openai.com/account/api-keys.
+ GET /api/edge/llmOpenAI.listModels?input=%7B%22json%22%3A%7B%22access%22%3A%7B%22dialect%22%3A%22openai%22%2C%22oaiKey%22%3A%22%22%2C%22oaiOrg%22%3A%22%22%2C%22oaiHost%22%3A%22%22%2C%22heliKey%22%3A%22%22%2C%22moderationCheck%22%3Afalse%7D%7D%7D 400 in 633ms
+[GET] Anthropic error (upstream): 401 (Unauthorized): invalid x-api-key
+❌ tRPC-edge failed on llmAnthropic.listModels: [Anthropic issue]: Unauthorized - invalid x-api-key
+ GET /api/edge/llmAnthropic.listModels?input=%7B%22json%22%3A%7B%22access%22%3A%7B%22dialect%22%3A%22anthropic%22%2C%22anthropicKey%22%3A%22%22%2C%22anthropicHost%22%3Anull%2C%22heliconeKey%22%3Anull%7D%7D%7D 400 in 640ms
+[GET] OpenAI/Openai error (upstream): 401 (Unauthorized): Incorrect API key provided: sk-oPULE*******************************************************jR4W. You can find your API key at https://platform.openai.com/account/api-keys.
+❌ tRPC-edge failed on llmOpenAI.listModels: [OpenAI/Openai issue]: Unauthorized - Incorrect API key provided: sk-oPULE*******************************************************jR4W. You can find your API key at https://platform.openai.com/account/api-keys.
+ GET /api/edge/llmOpenAI.listModels?input=%7B%22json%22%3A%7B%22access%22%3A%7B%22dialect%22%3A%22openai%22%2C%22oaiKey%22%3A%22%22%2C%22oaiOrg%22%3A%22%22%2C%22oaiHost%22%3A%22%22%2C%22heliKey%22%3A%22%22%2C%22moderationCheck%22%3Afalse%7D%7D%7D 400 in 504ms
+ GET /api/edge/llmOllama.listModels?input=%7B%22json%22%3A%7B%22access%22%3A%7B%22dialect%22%3A%22ollama%22%2C%22ollamaHost%22%3A%22%22%2C%22ollamaJson%22%3Atrue%7D%7D%7D 200 in 581ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 154887ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 21782ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 26920ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 4704ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 471898ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 32527ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 1404ms
+ POST /api/edge/aix.chatGenerateContent?batch=1 200 in 2758ms
+ ⚠ Fast Refresh had to perform a full reload when ./src/modules/browse/store-module-browsing.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 767ms
+ ⚠ Fast Refresh had to perform a full reload when ./src/modules/browse/store-module-browsing.tsx changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ GET / 200 in 1734ms
+ ✓ Compiled in 32ms
+ ✓ Compiled in 49ms
+ ⚠ Fast Refresh had to perform a full reload when ./src/modules/browse/browse.client.ts changed. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ✓ Compiled in 33ms
+ GET / 200 in 903ms
+ GET /api/edge/backend.listCapabilities?input=%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%7D%7D 200 in 640ms
+ GET / 200 in 81ms
+ GET /api/edge/backend.listCapabilities?input=%7B%22json%22%3Anull%2C%22meta%22%3A%7B%22values%22%3A%5B%22undefined%22%5D%7D%7D 200 in 23ms

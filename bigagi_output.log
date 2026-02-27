@@ -1,0 +1,19 @@
+
+> big-agi@1.92.0 dev
+> next dev --turbopack -p 3002
+
+ 🧠 [1mbig-AGI[0m v1.92.0 (@3c4decd)
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'optimizeFonts'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3002
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3002)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3002
+}
+[?25h

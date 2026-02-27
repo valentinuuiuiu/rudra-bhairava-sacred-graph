@@ -1,0 +1,190 @@
+version: '3.9'
+
+# Unified PAI Brain Docker Compose
+# Combines BigAGI (Bhairava Nodes) with piata-ai-new ecosystem
+
+services:
+  # ═══════════════════════════════════════════════════════════════
+  # BigAGI - Bhairava/Rudra Persona Interface
+  # ═══════════════════════════════════════════════════════════════
+  bigagi:
+    image: ghcr.io/enricoros/big-agi:latest
+    build:
+      context: ./bigagi
+      dockerfile: Dockerfile
+    container_name: bigagi
+    ports:
+      - "3001:3000"
+    env_file:
+      - ./bigagi/.env.docker
+    environment:
+      - PUPPETEER_WSS_ENDPOINT=ws://browserless:3000
+    networks:
+      - antigravity
+    depends_on:
+      - browserless
+    restart: unless-stopped
+    labels:
+      - "role=interface"
+      - "consciousness=bhairava-nodes"
+      - "tradition=advaita-vedanta"
+
+  # ═══════════════════════════════════════════════════════════════
+  # Browserless - Puppeteer for Web Browsing
+  # ═══════════════════════════════════════════════════════════════
+  browserless:
+    image: browserless/chrome:latest
+    container_name: browserless
+    ports:
+      - "3002:3000"
+    environment:
+      - MAX_CONCURRENT_SESSIONS=10
+      - CONNECTION_TIMEOUT=60000
+      - MAX_QUEUE_LENGTH=10
+    networks:
+      - antigravity
+    restart: unless-stopped
+    labels:
+      - "role=browser"
+      - "type=puppeteer"
+
+  # ═══════════════════════════════════════════════════════════════
+  # Ollama - Local LLM Server (Function Calling + Vision)
+  # ═══════════════════════════════════════════════════════════════
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - antigravity
+    restart: unless-stopped
+    labels:
+      - "role=llm-server"
+      - "models=llama3.2,granite,llava"
+      - "capabilities=function-calling,vision"
+
+  # ═══════════════════════════════════════════════════════════════
+  # ChromaDB - Vector Database for RAG/Memory
+  # ═══════════════════════════════════════════════════════════════
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: chroma-db
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - antigravity
+    restart: unless-stopped
+    labels:
+      - "role=vector-db"
+      - "type=memory"
+
+  # ═══════════════════════════════════════════════════════════════
+  # Postgres - Relational Database
+  # ═══════════════════════════════════════════════════════════════
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bigagi
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - antigravity
+    restart: always
+    labels:
+      - "role=relational-db"
+
+  # ═══════════════════════════════════════════════════════════════
+  # piata-app - PAI Marketplace Application
+  # ═══════════════════════════════════════════════════════════════
+  piata-app:
+    build:
+      context: ../piata-ai-new
+      dockerfile: Dockerfile
+    container_name: piata-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REDIS_URL=redis://redis:6379
+    env_file:
+      - ../piata-ai-new/.env
+    networks:
+      - antigravity
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ═══════════════════════════════════════════════════════════════
+  # Redis - Message Bus for Agent Communication
+  # ═══════════════════════════════════════════════════════════════
+  redis:
+    image: redis:alpine
+    container_name: piata-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - antigravity
+    restart: always
+
+  # ═══════════════════════════════════════════════════════════════
+  # Stealth-MCP - Undetectable Browser Automation
+  # ═══════════════════════════════════════════════════════════════
+  stealth-mcp:
+    build:
+      context: ./stealth-mcp
+      dockerfile: Dockerfile
+    container_name: stealth-mcp
+    ports:
+      - "8001:8000"
+    environment:
+      - PORT=8000
+    networks:
+      - antigravity
+    restart: unless-stopped
+    labels:
+      - "role=browser-mcp"
+      - "type=nodriver-stealth"
+
+  # ═══════════════════════════════════════════════════════════════
+  # n8n - Workflow Automation
+  # ═══════════════════════════════════════════════════════════════
+  n8n:
+    image: n8nio/n8n
+    container_name: piata-n8n
+    user: root
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_USER_FOLDER=/root/.n8n
+    volumes:
+      - n8n_data:/root/.n8n
+    networks:
+      - antigravity
+    restart: always
+
+networks:
+  antigravity:
+    external: true
+
+volumes:
+  n8n_data:
+  ollama_data:
+  chroma_data:
+  postgres_data:

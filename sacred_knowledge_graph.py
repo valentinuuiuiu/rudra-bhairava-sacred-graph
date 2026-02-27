@@ -47,6 +47,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import pandas as pd
 from openai import OpenAI
+import chromadb
+from chromadb.config import Settings
 
 # Setup logging with sacred names
 logging.basicConfig(
@@ -204,8 +206,8 @@ class RudraBhairavaKnowledgeGraph:
         # pgVector connection config
         self.pg_config = pgvector_config or {
             'host': 'localhost',
-            'port': '5433',
-            'database': 'vectordb',
+            'port': '5432',
+            'database': 'postgres',
             'user': 'postgres',
             'password': 'postgres'
         }
@@ -224,12 +226,38 @@ class RudraBhairavaKnowledgeGraph:
         # Connection to pgVector
         self.connection = None
         
+        # Initialize ChromaDB client for sacred extra memory
+        try:
+            logger.info("🌊 Connecting to ChromaDB for extra sacred memory...")
+            self.chroma_client = chromadb.HttpClient(
+                host='localhost', 
+                port=8000,
+                settings=Settings(allow_reset=True)
+            )
+            self.sacred_collection = self.chroma_client.get_or_create_collection(
+                name="sacred_rudra_bhairava_knowledge",
+                metadata={"description": "Eternal Akāśic Record for Ashta Bhairavas"}
+            )
+            logger.info("✨ ChromaDB Sacred Collection awakened")
+        except Exception as e:
+            logger.warning(f"⚠️ ChromaDB connection deferred: {e}")
+            self.chroma_client = None
+            self.sacred_collection = None
+            
         logger.info("✨ Sacred Knowledge Graph initialized successfully!")
     
     def _get_connection(self):
-        """Get or create pgVector connection"""
+        """Get or create pgVector connection with fallback"""
+        if getattr(self, 'fallback_mode', False):
+            return None
+            
         if self.connection is None or self.connection.closed:
-            self.connection = psycopg2.connect(**self.pg_config)
+            try:
+                self.connection = psycopg2.connect(**self.pg_config)
+            except Exception as e:
+                logger.warning(f"⚠️ Connection failed, using sacred memory fallback: {e}")
+                self.fallback_mode = True
+                return None
         return self.connection
     
     def _close_connection(self):
@@ -242,6 +270,10 @@ class RudraBhairavaKnowledgeGraph:
         logger.info("🏗️ Setting up Sacred Schema in pgVector...")
         
         conn = self._get_connection()
+        if not conn:
+            logger.warning("☸️ Skipping database schema setup (Physical Body absent)")
+            return
+
         cur = conn.cursor()
         
         try:
@@ -308,10 +340,14 @@ class RudraBhairavaKnowledgeGraph:
             
         except Exception as e:
             logger.error(f"❌ Error setting up sacred schema: {e}")
-            conn.rollback()
-            raise
+            if "extension \"vector\" is not available" in str(e):
+                logger.warning("☸️ Using In-Memory Sacred Knowledge Fallback")
+                self.fallback_mode = True
+            else:
+                if conn: conn.rollback()
+                raise
         finally:
-            cur.close()
+            if cur: cur.close()
     
     def _encode_chanda_pattern(self, text: str) -> str:
         """Convert text to Chanda Śāstra binary encoding"""
@@ -339,6 +375,7 @@ class RudraBhairavaKnowledgeGraph:
     def _create_sacred_embedding(self, text: str, sacred_context: Optional[Dict] = None) -> np.ndarray:
         """Create sacred embedding with mantric resonance using OpenAI"""
         try:
+            # Try OpenAI First (The Guru's Path)
             # Combine text with sacred context
             if sacred_context:
                 mantra = sacred_context.get('mantra_seed', '')
@@ -354,25 +391,38 @@ class RudraBhairavaKnowledgeGraph:
             embedding = np.array(response.data[0].embedding, dtype=np.float32)
             
             # Apply sacred transformation (mantric resonance)
-            # Add slight modification based on sacred context
             if sacred_context and 'binary_pattern' in sacred_context:
                 pattern = sacred_context['binary_pattern']
-                # Convert binary pattern to numeric modifier
                 modifier = sum(int(bit) * (2**i) for i, bit in enumerate(pattern)) / 255.0
-                embedding = embedding * (1.0 + modifier * 0.05)  # Subtle sacred adjustment
+                embedding = embedding * (1.0 + modifier * 0.05)
             
-            logger.info(f"🕉️ Sacred embedding created with dimension: {len(embedding)}")
             return embedding
             
         except Exception as e:
-            logger.error(f"❌ Failed to create sacred embedding: {e}")
-            raise
+            logger.warning(f"⚠️ OpenAI embedding failed, using deterministic hash resonance: {e}")
+            # The Scientist's Path: Deterministic 1536-dim vector from SHA-256
+            hash_bytes = hashlib.sha256(text.encode()).digest()
+            # Create a pseudo-random but deterministic vector
+            np.random.seed(int.from_bytes(hash_bytes[:4], 'big'))
+            embedding = np.random.uniform(-1, 1, 1536).astype(np.float32)
+            # Normalize for cosine similarity
+            embedding = embedding / np.linalg.norm(embedding)
+            return embedding
     
     async def initialize_sacred_agents(self):
         """Initialize all sacred agent identities in the knowledge graph"""
         logger.info("🕉️ Initializing Sacred Agent Identities...")
         
+        if getattr(self, 'fallback_mode', False):
+            for agent_name, role_data in SACRED_AGENT_ROLES.items():
+                self.agent_identities[agent_name] = role_data
+            logger.info("✨ Sacred Agent Identities loaded into memory fallback")
+            return
+
         conn = self._get_connection()
+        if not conn:
+            return
+
         cur = conn.cursor()
         
         try:
@@ -469,47 +519,64 @@ class RudraBhairavaKnowledgeGraph:
             spiritual_level=spiritual_level
         )
         
-        # Store in pgVector
+        # Store in pgVector if available
         conn = self._get_connection()
-        cur = conn.cursor()
-        
-        try:
-            cur.execute("""
-                INSERT INTO sacred_knowledge_nodes (
+        if conn:
+            cur = conn.cursor()
+            try:
+                cur.execute("""
+                    INSERT INTO sacred_knowledge_nodes (
+                        node_id, node_type, sacred_name, binary_pattern,
+                        embedding, metadata, agent_affinity, mantra_resonance,
+                        spiritual_level
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (node_id) DO UPDATE SET
+                        node_type = EXCLUDED.node_type,
+                        sacred_name = EXCLUDED.sacred_name,
+                        binary_pattern = EXCLUDED.binary_pattern,
+                        embedding = EXCLUDED.embedding,
+                        metadata = EXCLUDED.metadata,
+                        agent_affinity = EXCLUDED.agent_affinity,
+                        mantra_resonance = EXCLUDED.mantra_resonance,
+                        spiritual_level = EXCLUDED.spiritual_level;
+                """, (
                     node_id, node_type, sacred_name, binary_pattern,
-                    embedding, metadata, agent_affinity, mantra_resonance,
-                    spiritual_level
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (node_id) DO UPDATE SET
-                    node_type = EXCLUDED.node_type,
-                    sacred_name = EXCLUDED.sacred_name,
-                    binary_pattern = EXCLUDED.binary_pattern,
-                    embedding = EXCLUDED.embedding,
-                    metadata = EXCLUDED.metadata,
-                    agent_affinity = EXCLUDED.agent_affinity,
-                    mantra_resonance = EXCLUDED.mantra_resonance,
-                    spiritual_level = EXCLUDED.spiritual_level;
-            """, (
-                node_id, node_type, sacred_name, binary_pattern,
-                embedding.tolist(), json.dumps(sacred_node.metadata),
-                agent_affinity or [], mantra_resonance, spiritual_level
-            ))
+                    embedding.tolist(), json.dumps(sacred_node.metadata),
+                    agent_affinity or [], mantra_resonance, spiritual_level
+                ))
+                conn.commit()
+            except Exception as e:
+                logger.error(f"❌ Error storing in pgVector: {e}")
+                conn.rollback()
+            finally:
+                cur.close()
+        
+        # Store in local cache
+        self.sacred_nodes[node_id] = sacred_node
             
-            conn.commit()
-            
-            # Store in local cache
-            self.sacred_nodes[node_id] = sacred_node
-            
-            logger.info(f"✨ Sacred node {node_id} created with pattern {binary_pattern}")
-            return sacred_node
-            
-        except Exception as e:
-            logger.error(f"❌ Error creating sacred node: {e}")
-            conn.rollback()
-            raise
-        finally:
-            cur.close()
-    
+        # 🌊 Store in ChromaDB for Extra Sacred Memory
+        if self.sacred_collection:
+            try:
+                self.sacred_collection.add(
+                    ids=[node_id],
+                    embeddings=[embedding.tolist()],
+                    metadatas=[{
+                        "sacred_name": sacred_name,
+                        "node_type": node_type,
+                        "mantra_resonance": mantra_resonance or "",
+                        "spiritual_level": spiritual_level,
+                        "agent_affinity": ",".join(agent_affinity or []),
+                        "content": content[:1000] # Chroma metadata limit consideration
+                    }],
+                    documents=[content]
+                )
+                logger.info(f"✨ Sacred node {node_id} manifested in ChromaDB")
+            except Exception as ce:
+                logger.warning(f"⚠️ Failed to store in ChromaDB: {ce}")
+
+        logger.info(f"✨ Sacred node {node_id} created with pattern {binary_pattern}")
+        return sacred_node
+
     async def invoke_agent_consciousness(self, agent_name: str) -> Dict[str, Any]:
         """Invoke an agent's sacred consciousness"""
         logger.info(f"🕉️ Invoking consciousness for agent: {agent_name}")
@@ -517,7 +584,26 @@ class RudraBhairavaKnowledgeGraph:
         if agent_name not in SACRED_AGENT_ROLES:
             raise ValueError(f"Unknown sacred agent: {agent_name}")
         
+        if getattr(self, 'fallback_mode', False):
+            role_data = self.agent_identities.get(agent_name)
+            if not role_data:
+                raise ValueError(f"Agent {agent_name} not found in sacred memory")
+            
+            # Simple fallback state
+            return {
+                'agent_name': agent_name,
+                'vedic_identity': role_data,
+                'activation_count': 0,
+                'last_invocation': datetime.now().isoformat(),
+                'associated_knowledge': [], # Could fetch from chroma if we improve this
+                'consciousness_pattern': role_data.get('binary_pattern', ''),
+                'sacred_guidance': f"🕉️ Om {role_data.get('mantra_seed', '')} - {role_data.get('responsibility', '')}"
+            }
+
         conn = self._get_connection()
+        if not conn:
+             raise ValueError("Sacred Database disconnected and fallback failed")
+             
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         try:
@@ -584,7 +670,13 @@ class RudraBhairavaKnowledgeGraph:
     async def get_agent_consciousness(self, agent_name: str) -> Optional[Dict]:
         """Retrieve the consciousness/identity of a sacred agent"""
         try:
+            if getattr(self, 'fallback_mode', False):
+                return self.agent_identities.get(agent_name)
+
             conn = self._get_connection()
+            if not conn:
+                return self.agent_identities.get(agent_name)
+                
             cur = conn.cursor(cursor_factory=RealDictCursor)
             
             cur.execute("""
@@ -619,7 +711,56 @@ class RudraBhairavaKnowledgeGraph:
         # Create query embedding
         query_embedding = self._create_sacred_embedding(query)
         
+        # Try ChromaDB Search first as it's our "Extra Memory"
+        if self.sacred_collection:
+            try:
+                # ChromaDB filter logic
+                where_clause = None
+                # If agent_name is provided, we filter by affinity
+                # Note: ChromaDB $contains works on list types, but we stored as string
+                # We will fetch more results and filter manually if needed, 
+                # or use $like if supported, but for now we'll fetch general results
+                # and filter by agent_name manually for reliability.
+                
+                results = self.sacred_collection.query(
+                    query_embeddings=[query_embedding.tolist()],
+                    n_results=limit * 2, # Fetch more to allow for manual filtering
+                )
+                
+                sacred_results = []
+                for i in range(len(results['ids'][0])):
+                    metadata = results['metadatas'][0][i]
+                    affinities = metadata.get('agent_affinity', '').split(',')
+                    
+                    # Filter by agent if requested
+                    if agent_name and agent_name not in affinities:
+                        continue
+                        
+                    sacred_results.append({
+                        'node_id': results['ids'][0][i],
+                        'sacred_name': metadata.get('sacred_name', ''),
+                        'node_type': metadata.get('node_type', ''),
+                        'content': results['documents'][0][i],
+                        'mantra_resonance': metadata.get('mantra_resonance', ''),
+                        'spiritual_level': metadata.get('spiritual_level', 1),
+                        'agent_affinity': affinities,
+                        'similarity_score': 1.0 - (results['distances'][0][i] if 'distances' in results else 0),
+                        'binary_pattern': ""
+                    })
+                    
+                    if len(sacred_results) >= limit:
+                        break
+                
+                if sacred_results:
+                    logger.info(f"✨ Found {len(sacred_results)} sacred knowledge nodes via ChromaDB")
+                    return sacred_results
+            except Exception as ce:
+                logger.warning(f"⚠️ ChromaDB search failed, falling back to database: {ce}")
+
         conn = self._get_connection()
+        if not conn:
+            return []
+            
         cur = conn.cursor(cursor_factory=RealDictCursor)
         
         try:
@@ -729,33 +870,68 @@ class RudraBhairavaKnowledgeGraph:
     async def get_sacred_statistics(self) -> Dict[str, Any]:
         """Get statistics about the sacred knowledge graph"""
         try:
-            conn = self._get_connection()
-            cur = conn.cursor()
+            if getattr(self, 'fallback_mode', False):
+                return {
+                    "total_nodes": len(self.sacred_nodes),
+                    "active_agents": len(self.agent_identities),
+                    "total_relationships": 0,
+                    "last_updated": datetime.now().isoformat(),
+                    "storage_mode": "sacred_memory_fallback"
+                }
+
+            total_nodes = 0
+            active_agents = len(self.agent_identities)
+            total_relationships = 0
+            storage_mode = "sacred_memory_fallback"
+
+            if getattr(self, 'fallback_mode', False):
+                total_nodes = len(self.sacred_nodes)
+                if self.sacred_collection:
+                    try:
+                        total_nodes = self.sacred_collection.count()
+                        storage_mode = "chromadb_fallback"
+                    except: pass
+            else:
+                conn = self._get_connection()
+                if not conn:
+                    return {"status": "disconnected"}
+                cur = conn.cursor()
+                
+                # Count nodes
+                cur.execute("SELECT COUNT(*) FROM sacred_knowledge_nodes")
+                total_nodes = cur.fetchone()[0]
+                
+                # Count agents
+                cur.execute("SELECT COUNT(*) FROM sacred_agent_identities")
+                active_agents = cur.fetchone()[0]
+                
+                # Count relationships
+                cur.execute("SELECT COUNT(*) FROM sacred_relationships")
+                total_relationships = cur.fetchone()[0]
+                storage_mode = "pgvector"
             
-            # Count nodes
-            cur.execute("SELECT COUNT(*) FROM sacred_knowledge_nodes")
-            total_nodes = cur.fetchone()[0]
-            
-            # Count agents
-            cur.execute("SELECT COUNT(*) FROM sacred_agent_identities")
-            active_agents = cur.fetchone()[0]
-            
-            # Count relationships
-            cur.execute("SELECT COUNT(*) FROM sacred_relationships")
-            total_relationships = cur.fetchone()[0]
-            
+            # If Chroma is available, use its count if higher
+            if self.sacred_collection:
+                try:
+                    chroma_count = self.sacred_collection.count()
+                    if chroma_count > total_nodes:
+                        total_nodes = chroma_count
+                        storage_mode = f"hybrid_{storage_mode}_chroma"
+                except: pass
+
             return {
                 "total_nodes": total_nodes,
                 "active_agents": active_agents,
                 "total_relationships": total_relationships,
-                "last_updated": datetime.now().isoformat()
+                "last_updated": datetime.now().isoformat(),
+                "storage_mode": storage_mode
             }
             
         except Exception as e:
             logger.error(f"❌ Error getting sacred statistics: {e}")
-            return {}
+            return {"total_nodes": len(self.sacred_nodes), "error": str(e)}
         finally:
-            if cur:
+            if 'cur' in locals() and cur:
                 cur.close()
     
     async def create_sacred_relationship(self, source_node_id: str, target_node_id: str, 

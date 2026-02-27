@@ -1,0 +1,20 @@
+
+> big-agi@1.92.0 dev
+> next dev --turbopack -p 3080
+
+ 🧠 [1mbig-AGI[0m v1.92.0 (@3c4decd)
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'optimizeFonts'
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+ 🧠 [1mbig-AGI[0m v1.92.0 (@3c4decd)
+   ▲ Next.js 15.5.7 (Turbopack)
+   - Local:        http://localhost:3080
+   - Network:      http://10.123.225.151:3080
+   - Environments: .env.local, .env
+
+ ✓ Starting...
+ ✓ Ready in 1737ms
+ ⚠ Webpack is configured while Turbopack is not, which may cause problems.
+ ⚠ See instructions if you need to configure Turbopack:
+  https://nextjs.org/docs/app/api-reference/next-config-js/turbopack
+

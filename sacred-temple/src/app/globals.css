@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sacred-gold: #f2cc0d;
+  --color-sacred-violet: #7c3aed;
+  --color-sacred-obsidian: #0a0a0a;
+  --color-sacred-charcoal: #171717;
+  
+  --font-serif: var(--font-outfit), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-serif);
+  overflow-x: hidden;
+}
+
+/* Sacred Glow Classes */
+.glow-gold {
+  box-shadow: 0 0 20px rgba(242, 204, 13, 0.2);
+}
+
+.glow-violet {
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px rgba(242, 204, 13, 0.5);
+}
+
+/* Akasha Background Animation */
+@keyframes akasha-pulse {
+  0% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.05); }
+  100% { opacity: 0.3; transform: scale(1); }
+}
+
+.akasha-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+  overflow: hidden;
+}
+
+.akasha-fractal {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #f2cc0d, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 50px 160px, #7c3aed, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 130px 80px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 160px 120px, #f2cc0d, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 200px 200px;
+  animation: akasha-pulse 20s infinite linear;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(23, 23, 23, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(242, 204, 13, 0.1);
+}

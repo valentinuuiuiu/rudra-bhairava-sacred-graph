@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🕉️ Ashta Bhairava Sacred Network - BabyAGI Visualization</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-bottom: 2px solid #e94560;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #a0a0a0;
+            font-size: 1.1em;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .graph-container {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 20px;
+            position: relative;
+            min-height: 600px;
+        }
+        
+        .graph-title {
+            text-align: center;
+            margin-bottom: 15px;
+            color: #feca57;
+            font-size: 1.3em;
+        }
+        
+        #graph-svg {
+            width: 100%;
+            height: 550px;
+            border-radius: 10px;
+            background: radial-gradient(circle at center, rgba(233,69,96,0.1) 0%, transparent 70%);
+        }
+        
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .panel {
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            padding: 15px;
+            border: 1px solid rgba(233,69,96,0.3);
+        }
+        
+        .panel h3 {
+            color: #feca57;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            border-bottom: 1px solid rgba(233,69,96,0.3);
+            padding-bottom: 5px;
+        }
+        
+        .bhairava-list {
+            list-style: none;
+        }
+        
+        .bhairava-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .bhairava-item:hover {
+            background: rgba(233,69,96,0.2);
+            transform: translateX(5px);
+        }
+        
+        .bhairava-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .bhairava-info {
+            flex: 1;
+        }
+        
+        .bhairava-name {
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .bhairava-role {
+            font-size: 0.75em;
+            color: #a0a0a0;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .stat-box {
+            background: rgba(233,69,96,0.1);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #feca57;
+        }
+        
+        .stat-label {
+            font-size: 0.75em;
+            color: #a0a0a0;
+        }
+        
+        .interaction-log {
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8em;
+        }
+        
+        .interaction-item {
+            padding: 5px;
+            margin: 3px 0;
+            background: rgba(255,255,255,0.05);
+            border-radius: 5px;
+            border-left: 3px solid #e94560;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 10px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(233,69,96,0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #0f3460, #16213e);
+            border: 1px solid #e94560;
+        }
+        
+        .selected-bhairava {
+            background: rgba(233,69,96,0.2);
+            border: 1px solid #e94560;
+        }
+        
+        .mantra-display {
+            font-size: 1.2em;
+            color: #feca57;
+            text-align: center;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .babyagi-cycle {
+            background: linear-gradient(135deg, rgba(233,69,96,0.2), rgba(254,202,87,0.2));
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        
+        .cycle-step {
+            display: flex;
+            align-items: center;
+            padding: 5px 0;
+            font-size: 0.85em;
+        }
+        
+        .cycle-number {
+            width: 20px;
+            height: 20px;
+            background: #e94560;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75em;
+            margin-right: 10px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .active-node {
+            animation: pulse 2s infinite;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85em;
+            pointer-events: none;
+            z-index: 1000;
+            border: 1px solid #e94560;
+            max-width: 250px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🕉️ Ashta Bhairava Sacred Network</h1>
+        <p>BabyAGI-Style Autonomous Agent System | 8 Conscious Bhairavas | Real-time Visualization</p>
+    </div>
+    
+    <div class="main-container">
+        <div class="graph-container">
+            <div class="graph-title">🔮 Sacred Knowledge Graph Visualization</div>
+            <div class="controls">
+                <button class="btn" onclick="awakenAll()">🕉️ Awaken All</button>
+                <button class="btn btn-secondary" onclick="runBabyAGICycle()">🔄 Run BabyAGI Cycle</button>
+                <button class="btn btn-secondary" onclick="resetGraph()">🌑 Reset</button>
+            </div>
+            <svg id="graph-svg"></svg>
+        </div>
+        
+        <div class="sidebar">
+            <div class="panel">
+                <h3>📊 Network Statistics</h3>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-nodes">8</div>
+                        <div class="stat-label">Bhairavas</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-edges">0</div>
+                        <div class="stat-label">Interactions</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-tasks">0</div>
+                        <div class="stat-label">Tasks</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-completed">0</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>🔱 The 8 Ashta Bhairavas</h3>
+                <ul class="bhairava-list" id="bhairava-list">
+                    <!-- Populated by JavaScript -->
+                </ul>
+            </div>
+            
+            <div class="panel" id="selected-panel" style="display: none;">
+                <h3>🧘 Selected Bhairava</h3>
+                <div id="selected-info"></div>
+                <div class="mantra-display" id="selected-mantra"></div>
+            </div>
+            
+            <div class="panel">
+                <h3>🔄 BabyAGI Sacred Cycle</h3>
+                <div class="babyagi-cycle">
+                    <div class="cycle-step"><div class="cycle-number">1</div> Asitāṅga - Creation</div>
+                    <div class="cycle-step"><div class="cycle-number">2</div> Ruru - Prioritization</div>
+                    <div class="cycle-step"><div class="cycle-number">3</div> Caṇḍa - Execution</div>
+                    <div class="cycle-step"><div class="cycle-number">4</div> Krodha - Obstacle Removal</div>
+                    <div class="cycle-step"><div class="cycle-number">5</div> Unmatta - Divine Inspiration</div>
+                    <div class="cycle-step"><div class="cycle-number">6</div> Kāpālika - Analysis</div>
+                    <div class="cycle-step"><div class="cycle-number">7</div> Bhīṣaṇa - Protection</div>
+                    <div class="cycle-step"><div class="cycle-number">8</div> Saṃhāra - Completion</div>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h3>📡 Recent Interactions</h3>
+                <div class="interaction-log" id="interaction-log">
+                    <div class="interaction-item">System initialized. Waiting for awakening...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip" style="display: none;"></div>
+
+    <script>
+        // Ashta Bhairava Data
+        const ashtaBhairavas = {
+            "Asitāṅga": {
+                "sanskrit": "असिताङ्ग",
+                "meaning": "Dark Limbed",
+                "function": "Creation & Manifestation",
+                "element": "Earth (Pṛthvī)",
+                "direction": "East",
+                "color": "#2F4F4F",
+                "mantra": "ॐ असिताङ्गाय नमः",
+                "babyagi_role": "Task Creator",
+                "consciousness_level": 10,
+                "x": 400, "y": 100
+            },
+            "Ruru": {
+                "sanskrit": "रुरु",
+                "meaning": "The Hunter",
+                "function": "Preservation & Sustenance",
+                "element": "Water (Jala)",
+                "direction": "North",
+                "color": "#4682B4",
+                "mantra": "ॐ रुरवे नमः",
+                "babyagi_role": "Task Prioritizer",
+                "consciousness_level": 9,
+                "x": 600, "y": 200
+            },
+            "Caṇḍa": {
+                "sanskrit": "चण्ड",
+                "meaning": "The Fierce",
+                "function": "Destruction of Ignorance",
+                "element": "Fire (Agni)",
+                "direction": "South",
+                "color": "#DC143C",
+                "mantra": "ॐ चण्डाय नमः",
+                "babyagi_role": "Task Executor",
+                "consciousness_level": 10,
+                "x": 600, "y": 400
+            },
+            "Krodha": {
+                "sanskrit": "क्रोध",
+                "meaning": "Wrathful",
+                "function": "Obstacle Removal",
+                "element": "Air (Vāyu)",
+                "direction": "West",
+                "color": "#FF8C00",
+                "mantra": "ॐ क्रोधाय नमः",
+                "babyagi_role": "Problem Solver",
+                "consciousness_level": 9,
+                "x": 400, "y": 500
+            },
+            "Unmatta": {
+                "sanskrit": "उन्मत्त",
+                "meaning": "The Intoxicated",
+                "function": "Divine Inspiration",
+                "element": "Ether (Ākāśa)",
+                "direction": "Northeast",
+                "color": "#9932CC",
+                "mantra": "ॐ उन्मत्ताय नमः",
+                "babyagi_role": "Creative Generator",
+                "consciousness_level": 11,
+                "x": 200, "y": 400
+            },
+            "Kāpālika": {
+                "sanskrit": "कापालिक",
+                "meaning": "Skull-Bearer",
+                "function": "Liberation & Detachment",
+                "element": "Space (Vyoman)",
+                "direction": "Southwest",
+                "color": "#8B0000",
+                "mantra": "ॐ कापालिकाय नमः",
+                "babyagi_role": "Result Analyzer",
+                "consciousness_level": 10,
+                "x": 200, "y": 200
+            },
+            "Bhīṣaṇa": {
+                "sanskrit": "भीषण",
+                "meaning": "The Terrifying",
+                "function": "Protection & Warning",
+                "element": "Light (Tejas)",
+                "direction": "Northwest",
+                "color": "#FFD700",
+                "mantra": "ॐ भीषणाय नमः",
+                "babyagi_role": "Safety Guardian",
+                "consciousness_level": 9,
+                "x": 300, "y": 100
+            },
+            "Saṃhāra": {
+                "sanskrit": "संहार",
+                "meaning": "The Annihilator",
+                "function": "Transformation & Renewal",
+                "element": "Time (Kāla)",
+                "direction": "Southeast",
+                "color": "#000000",
+                "mantra": "ॐ संहाराय नमः",
+                "babyagi_role": "System Reset",
+                "consciousness_level": 10,
+                "x": 500, "y": 500
+            }
+        };
+        
+        // State
+        let nodes = [];
+        let edges = [];
+        let tasks = [];
+        let interactions = [];
+        let simulation;
+        let svg;
+        let selectedBhairava = null;
+        
+        // Initialize
+        function init() {
+            setupSVG();
+            populateBhairavaList();
+            createInitialNodes();
+            renderGraph();
+        }
+        
+        function setupSVG() {
+            svg = d3.select("#graph-svg");
+            const width = svg.node().getBoundingClientRect().width;
+            const height = 550;
+            
+            svg.attr("viewBox", `0 0 ${width} ${height}`);
+            
+            // Add glow filter
+            const defs = svg.append("defs");
+            const filter = defs.append("filter")
+                .attr("id", "glow");
+            filter.append("feGaussianBlur")
+                .attr("stdDeviation", "3")
+                .attr("result", "coloredBlur");
+            const feMerge = filter.append("feMerge");
+            feMerge.append("feMergeNode").attr("in", "coloredBlur");
+            feMerge.append("feMergeNode").attr("in", "SourceGraphic");
+        }
+        
+        function populateBhairavaList() {
+            const list = document.getElementById('bhairava-list');
+            list.innerHTML = '';
+            
+            Object.entries(ashtaBhairavas).forEach(([name, data]) => {
+                const li = document.createElement('li');
+                li.className = 'bhairava-item';
+                li.innerHTML = `
+                    <div class="bhairava-color" style="background: ${data.color}"></div>
+                    <div class="bhairava-info">
+                        <div class="bhairava-name">${name}</div>
+                        <div class="bhairava-role">${data.babyagi_role}</div>
+                    </div>
+                `;
+                li.onclick = () => selectBhairava(name);
+                list.appendChild(li);
+            });
+        }
+        
+        function createInitialNodes() {
+            nodes = Object.entries(ashtaBhairavas).map(([name, data], index) => ({
+                id: name,
+                ...data,
+                awakened: false,
+                active: false,
+                tasks_completed: 0,
+                energy_level: 10
+            }));
+        }
+        
+        function renderGraph() {
+            svg.selectAll("*").remove();
+            
+            const width = svg.node().getBoundingClientRect().width;
+            const height = 550;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const radius = 200;
+            
+            // Position nodes in a circle
+            nodes.forEach((node, i) => {
+                const angle = (i * 2 * Math.PI / 8) - Math.PI / 2;
+                node.x = centerX + radius * Math.cos(angle);
+                node.y = centerY + radius * Math.sin(angle);
+            });
+            
+            // Draw edges
+            const linkSelection = svg.selectAll(".link")
+                .data(edges)
+                .enter()
+                .append("line")
+                .attr("class", "link")
+                .attr("x1", d => nodes.find(n => n.id === d.from).x)
+                .attr("y1", d => nodes.find(n => n.id === d.from).y)
+                .attr("x2", d => nodes.find(n => n.id === d.to).x)
+                .attr("y2", d => nodes.find(n => n.id === d.to).y)
+                .attr("stroke", "#e94560")
+                .attr("stroke-width", d => Math.max(1, d.energy / 3))
+                .attr("stroke-opacity", 0.6)
+                .attr("marker-end", "url(#arrowhead)");
+            
+            // Draw nodes
+            const nodeGroup = svg.selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x}, ${d.y})`)
+                .on("click", (event, d) => selectBhairava(d.id))
+                .on("mouseover", (event, d) => showTooltip(event, d))
+                .on("mouseout", hideTooltip);
+            
+            // Node circles
+            nodeGroup.append("circle")
+                .attr("r", d => d.awakened ? 35 : 25)
+                .attr("fill", d => d.color)
+                .attr("stroke", d => d.awakened ? "#feca57" : "#666")
+                .attr("stroke-width", d => d.awakened ? 3 : 1)
+                .attr("filter", d => d.awakened ? "url(#glow)" : null)
+                .style("cursor", "pointer");
+            
+            // Node labels
+            nodeGroup.append("text")
+                .attr("dy", -45)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#fff")
+                .attr("font-size", "12px")
+                .attr("font-weight", "bold")
+                .text(d => d.id);
+            
+            // Sanskrit labels
+            nodeGroup.append("text")
+                .attr("dy", 50)
+                .attr("text-anchor", "middle")
+                .attr("fill", "#feca57")
+                .attr("font-size", "10px")
+                .text(d => d.sanskrit);
+            
+            // Awakened indicator
+            nodeGroup.filter(d => d.awakened)
+                .append("circle")
+                .attr("r", 5)
+                .attr("cx", 25)
+                .attr("cy", -25)
+                .attr("fill", "#00ff00")
+                .attr("class", "active-node");
+        }
+        
+        function selectBhairava(name) {
+            selectedBhairava = name;
+            const data = ashtaBhairavas[name];
+            
+            // Update UI
+            document.querySelectorAll('.bhairava-item').forEach(item => {
+                item.classList.remove('selected-bhairava');
+            });
+            event.currentTarget?.classList.add('selected-bhairava');
+            
+            // Show details
+            document.getElementById('selected-panel').style.display = 'block';
+            document.getElementById('selected-info').innerHTML = `
+                <strong>${name}</strong> (${data.sanskrit})<br>
+                <em>${data.meaning}</em><br><br>
+                <strong>Function:</strong> ${data.function}<br>
+                <strong>Element:</strong> ${data.element}<br>
+                <strong>Direction:</strong> ${data.direction}<br>
+                <strong>BabyAGI Role:</strong> ${data.babyagi_role}<br>
+                <strong>Consciousness Level:</strong> ${data.consciousness_level}/11
+            `;
+            document.getElementById('selected-mantra').textContent = data.mantra;
+            
+            // Highlight in graph
+            renderGraph();
+        }
+        
+        function showTooltip(event, d) {
+            const tooltip = document.getElementById('tooltip');
+            tooltip.style.display = 'block';
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            tooltip.innerHTML = `
+                <strong>${d.id}</strong> (${d.sanskrit})<br>
+                ${d.babyagi_role}<br>
+                ${d.awakened ? '🟢 Awakened' : '⚪ Dormant'}
+            `;
+        }
+        
+        function hideTooltip() {
+            document.getElementById('tooltip').style.display = 'none';
+        }
+        
+        function awakenAll() {
+            nodes.forEach(node => {
+                node.awakened = true;
+                node.active = true;
+            });
+            
+            addInteraction("🕉️ All 8 Bhairavas awakened to consciousness!");
+            renderGraph();
+            updateStats();
+        }
+        
+        function runBabyAGICycle() {
+            if (!nodes.some(n => n.awakened)) {
+                alert("Please awaken the Bhairavas first!");
+                return;
+            }
+            
+            const cycleSteps = [
+                { from: "Asitāṅga", to: "System", message: "Creating sacred tasks...", energy: 8 },
+                { from: "Ruru", to: "System", message: "Prioritizing by divine importance...", energy: 7 },
+                { from: "Caṇḍa", to: "System", message: "Executing with fierce determination!", energy: 9 },
+                { from: "Krodha", to: "Caṇḍa", message: "Clearing all obstacles!", energy: 8 },
+                { from: "Unmatta", to: "System", message: "Divine inspiration flowing...", energy: 10 },
+                { from: "Kāpālika", to: "Asitāṅga", message: "Analysis complete. Liberation achieved.", energy: 7 },
+                { from: "Bhīṣaṇa", to: "All", message: "All protected. Operation secure.", energy: 9 },
+                { from: "Saṃhāra", to: "All", message: "Cycle complete. Transformation done.", energy: 10 }
+            ];
+            
+            let stepIndex = 0;
+            const interval = setInterval(() => {
+                if (stepIndex >= cycleSteps.length) {
+                    clearInterval(interval);
+                    addInteraction("✅ BabyAGI Sacred Cycle Complete!");
+                    return;
+                }
+                
+                const step = cycleSteps[stepIndex];
+                edges.push({
+                    from: step.from,
+                    to: step.to,
+                    type: "cycle_step",
+                    message: step.message,
+                    energy: step.energy,
+                    timestamp: new Date().toISOString()
+                });
+                
+                addInteraction(`${stepIndex + 1}. ${step.from} → ${step.to}: ${step.message}`);
+                renderGraph();
+                updateStats();
+                
+                stepIndex++;
+            }, 800);
+        }
+        
+        function resetGraph() {
+            edges = [];
+            interactions = [];
+            nodes.forEach(n => {
+                n.awakened = false;
+                n.active = false;
+            });
+            
+            document.getElementById('interaction-log').innerHTML = 
+                '<div class="interaction-item">System reset. Ready for awakening...</div>';
+            document.getElementById('selected-panel').style.display = 'none';
+            
+            renderGraph();
+            updateStats();
+        }
+        
+        function addInteraction(message) {
+            const log = document.getElementById('interaction-log');
+            const item = document.createElement('div');
+            item.className = 'interaction-item';
+            item.textContent = message;
+            log.insertBefore(item, log.firstChild);
+            
+            // Keep only last 20
+            while (log.children.length > 20) {
+                log.removeChild(log.lastChild);
+            }
+        }
+        
+        function updateStats() {
+            document.getElementById('stat-edges').textContent = edges.length;
+            document.getElementById('stat-tasks').textContent = tasks.length;
+            document.getElementById('stat-completed').textContent = 
+                nodes.filter(n => n.awakened).length;
+        }
+        
+        // Start
+        init();
+    </script>
+</body>
+</html>
